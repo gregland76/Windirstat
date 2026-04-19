@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WinDirStat PowerShell - Aide</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #4b5563;
+      --accent: #0b5cab;
+      --accent-soft: #eaf3ff;
+      --border: #d8e2ef;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at top right, #ddeefe 0%, var(--bg) 45%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .hero {
+      background: linear-gradient(120deg, #0b5cab 0%, #0a4f92 100%);
+      color: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(11, 92, 171, 0.25);
+    }
+    .top-nav {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-link {
+      display: inline-block;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      border-radius: 999px;
+      padding: 8px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .btn-link:hover {
+      background: rgba(255, 255, 255, 0.24);
+    }
+    .btn-link.active {
+      background: #fff;
+      color: #0b5cab;
+      border-color: #fff;
+    }
+    h1, h2, h3 { margin-top: 0; }
+    h1 { font-size: 28px; margin-bottom: 8px; }
+    h2 { font-size: 22px; color: #0f355f; margin: 28px 0 12px; }
+    p, li { font-size: 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-top: 18px;
+      box-shadow: 0 8px 20px rgba(15, 53, 95, 0.07);
+    }
+    .hint {
+      background: var(--accent-soft);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #12385f;
+      margin: 10px 0;
+    }
+    code {
+      background: #eef2f7;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-family: Consolas, Menlo, Monaco, monospace;
+      font-size: 0.95em;
+    }
+    .footer {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+    }
+    @media (max-width: 720px) {
+      .container { padding: 14px; }
+      h1 { font-size: 24px; }
+      h2 { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="hero">
+      <h1>Aide Utilisateur</h1>
+      <p>Guide de prise en main de WinDirStat PowerShell.</p>
+      <nav class="top-nav" aria-label="Navigation documentation">
+        <a class="btn-link active" href="help.html">Aide</a>
+        <a class="btn-link" href="changelog.html">Changelog</a>
+      </nav>
+    </header>
+
+    <section class="card">
+      <h2>1. Objectif</h2>
+      <p>WinDirStat PowerShell permet d'analyser l'occupation disque d'un dossier ou d'un lecteur, avec une vue liste et une visualisation treemap.</p>
+    </section>
+
+    <section class="card">
+      <h2>2. Demarrage</h2>
+      <ol>
+        <li>Lancez le script PowerShell <code>windirstat.ps1</code>.</li>
+        <li>Cliquez sur <strong>Browse</strong> pour choisir un dossier.</li>
+        <li>Cliquez sur <strong>Scan</strong> (ou laissez le scan automatique actif).</li>
+      </ol>
+      <div class="hint">Capture suggeree : <code>screenshots/01-interface-principale.png</code></div>
+    </section>
+
+    <section class="card">
+      <h2>3. Utilisation de l'interface</h2>
+      <ul>
+        <li><strong>Browse</strong> : selectionne un dossier a analyser.</li>
+        <li><strong>Scan</strong> : lance l'analyse du chemin courant.</li>
+        <li><strong>Parent</strong> : remonte d'un niveau puis relance l'analyse.</li>
+        <li><strong>Docs</strong> : ouvre la documentation du projet.</li>
+        <li><strong>About</strong> : affiche les informations de l'application.</li>
+      </ul>
+      <div class="hint">Capture suggeree : <code>screenshots/02-apres-scan.png</code></div>
+    </section>
+
+    <section class="card">
+      <h2>4. Liste des elements</h2>
+      <p>La liste de droite affiche l'objet, le type, la taille et le pourcentage de l'espace total.</p>
+      <p>Actions disponibles :</p>
+      <ul>
+        <li>Double-clic sur un dossier pour l'analyser.</li>
+        <li>Clic droit sur un element pour ouvrir le fichier ou dossier, ou ouvrir le dossier parent.</li>
+      </ul>
+      <div class="hint">Capture suggeree : <code>screenshots/03-menu-contextuel.png</code></div>
+    </section>
+
+    <section class="card">
+      <h2>5. Treemap</h2>
+      <p>Le panneau de gauche affiche une treemap des elements les plus volumineux. Chaque rectangle represente un element avec une surface proportionnelle a sa taille.</p>
+    </section>
+
+    <section class="card">
+      <h2>6. Depannage</h2>
+      <ul>
+        <li>Message "The path does not exist" : verifiez que le chemin existe toujours.</li>
+        <li>Aucun element affiche : testez un autre dossier ou verifiez les permissions.</li>
+        <li>Ouverture impossible : l'element a peut-etre ete deplace ou supprime.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>7. Contact</h2>
+      <p>Voir la fenetre <strong>About</strong> pour les informations de contact.</p>
+      <div class="hint">Capture suggeree : <code>screenshots/04-fenetre-about.png</code></div>
+    </section>
+
+    <p class="footer">Documentation WinDirStat PowerShell</p>
+  </div>
+</body>
+</html>
