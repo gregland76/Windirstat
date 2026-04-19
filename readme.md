@@ -53,4 +53,7 @@ La documentation utilisateur est disponible dans le dossier [docs/README.md](doc
 
 - [docs/help.md](docs/help.md) pour le guide utilisateur ;
 - [docs/help.html](docs/help.html) pour la version HTML ;
-- [docs/changelog.html](docs/changelog.html) pour l'historique des versions.
+- [docs/changelog.md](docs/changelog.md) pour l'historique des mises a jour en Markdown ;
+- [docs/changelog.html](docs/changelog.html) pour l'historique des versions ;
+- [docs/screenshots/README.md](docs/screenshots/README.md) pour les captures d'ecran ;
+- [docs/generate-screenshots.ps1](docs/generate-screenshots.ps1) pour regenerer ces captures.

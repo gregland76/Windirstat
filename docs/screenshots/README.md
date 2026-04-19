@@ -1,6 +1,8 @@
 # Captures d'ecran
 
-Placez ici les captures d'ecran de l'application.
+Ce dossier contient les captures d'ecran de l'application.
+
+Les images peuvent etre regenerees avec `docs/generate-screenshots.ps1`.
 
 Noms recommandes :
 

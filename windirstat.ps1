@@ -1,8 +1,8 @@
-﻿# WinDirStat PowerShell - Version 1.6
+﻿# WinDirStat PowerShell - Version 1.8
 # Developed by Gregory HARGOUS
 # Date: 19 April 2026
 # Description: A PowerShell script to analyze disk usage with treemap visualization
-# History available in docs/changelog.html
+# History available in docs/changelog.md and docs/changelog.html
 
 
 Add-Type -AssemblyName System.Windows.Forms,System.Drawing

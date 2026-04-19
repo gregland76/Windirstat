@@ -57,3 +57,10 @@ Chaque rectangle represente un element avec une surface proportionnelle a sa tai
 Voir la fenetre **About** pour les informations de contact.
 
 Capture suggeree : `screenshots/04-fenetre-about.png`
+
+## 8. Historique des mises a jour
+
+Pour suivre les evolutions du projet, consultez :
+
+- `changelog.md` pour la version Markdown dans le depot.
+- `changelog.html` pour la version HTML.
