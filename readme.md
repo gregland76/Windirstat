@@ -11,7 +11,7 @@ Ce que fait le programme
 - Calcule la taille des fichiers et des sous-dossiers.
 - Trie les elements par taille decroissante.
 - Affiche les resultats dans une liste detaillee.
-- Genere une treemap visuelle pour reperer rapidement les elements les plus lourds.
+- Genere une treemap visuelle a surface proportionnelle pour reperer rapidement les elements les plus lourds.
 - Permet de naviguer dans l'arborescence en relancant une analyse sur un sous-dossier.
 - Permet d'ouvrir directement un fichier, un dossier ou le dossier contenant un fichier.
 
@@ -33,7 +33,7 @@ Interface
 
 Le programme ouvre une fenetre graphique Windows Forms avec deux zones principales :
 
-- a gauche, une treemap qui represente visuellement la taille relative des elements ;
+- a gauche, une treemap agencee en blocs plus carres qui represente visuellement la taille relative des elements ;
 - a droite, une liste detaillee des dossiers et fichiers analyses.
 
 Le programme affiche jusqu'a 50 elements tries par taille pour garder une interface lisible et rapide.

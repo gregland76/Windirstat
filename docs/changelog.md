@@ -3,6 +3,13 @@
 Ce document resume les evolutions de WinDirStat PowerShell.
 La version HTML equivalente est disponible dans `changelog.html`.
 
+## Version 1.9 - 2026-04-19
+
+### Modifie
+
+- Remplacement du treemap en bandes par un agencement proportionnel plus carre dans le panneau gauche.
+- Priorisation des plus gros elements en haut a gauche avec un layout treemap de type squarified.
+
 ## Version 1.8 - 2026-04-19
 
 ### Ajoute

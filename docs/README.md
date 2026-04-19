@@ -2,6 +2,8 @@
 
 Ce dossier contient la documentation du projet WinDirStat PowerShell.
 
+La documentation correspond a la version 1.9 du projet, incluant le nouveau treemap a blocs plus carres dans le panneau gauche.
+
 ## Contenu
 
 - `help.md` : guide utilisateur (installation, utilisation, depannage).

@@ -44,7 +44,8 @@ Capture suggeree : `screenshots/03-menu-contextuel.png`
 ## 5. Treemap
 
 Le panneau de gauche affiche une treemap des elements les plus volumineux.
-Chaque rectangle represente un element avec une surface proportionnelle a sa taille.
+Chaque bloc represente un element avec une surface proportionnelle a sa taille.
+Le layout privilegie des zones plus carrees et place les plus gros elements en haut a gauche.
 
 ## 6. Depannage
 

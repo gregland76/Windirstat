@@ -1,7 +1,7 @@
-﻿# WinDirStat PowerShell - Version 1.8
+﻿# WinDirStat PowerShell - Version 1.9
 # Developed by Gregory HARGOUS
 # Date: 19 April 2026
-# Description: A PowerShell script to analyze disk usage with treemap visualization
+# Description: A PowerShell script to analyze disk usage with a squarified treemap visualization
 # History available in docs/changelog.md and docs/changelog.html
 
 
@@ -153,14 +153,14 @@ $lv.Add_DoubleClick({
     $item = $lv.SelectedItems[0]
     if ($item.SubItems[1].Text -eq 'Folder' -and $item.Tag) {
             $txtPath.Text = $item.Tag
-            Perform-Scan $false
+            Start-Scan $false
         }
 })
 
 $lv.Add_MouseDown({
-    param($sender, $e)
+    param($control, $e)
 
-    [void]$sender
+    [void]$control
 
     if ($e.Button -ne [System.Windows.Forms.MouseButtons]::Right) { return }
 
@@ -176,9 +176,9 @@ $lv.Add_MouseDown({
 })
 
 $listContextMenu.Add_Opening({
-    param($sender, $e)
+    param($control, $e)
 
-    [void]$sender
+    [void]$control
 
     if ($lv.SelectedItems.Count -eq 0) {
         $e.Cancel = $true
@@ -208,7 +208,7 @@ $form.Add_Shown({
     $panelMap.Refresh()
 })
 
-$treemapItems = @()
+$script:treemapItems = @()
 $totalSize = 0
 
 function Format-Size {
@@ -305,7 +305,202 @@ function Get-ItemSizes {
     return $items
 }
 
-function Draw-Treemap {
+function Get-WorstAspectRatio {
+    param(
+        [object[]]$Row,
+        [double]$ShortSide,
+        [double]$Scale
+    )
+
+    if (-not $Row -or $Row.Count -eq 0 -or $ShortSide -le 0 -or $Scale -le 0) {
+        return [double]::PositiveInfinity
+    }
+
+    $sumArea = 0.0
+    $maxArea = 0.0
+    $minArea = [double]::PositiveInfinity
+
+    foreach ($entry in $Row) {
+        $area = [double]$entry.Size * $Scale
+        if ($area -le 0) { continue }
+
+        $sumArea += $area
+        if ($area -gt $maxArea) { $maxArea = $area }
+        if ($area -lt $minArea) { $minArea = $area }
+    }
+
+    if ($sumArea -le 0 -or $maxArea -le 0 -or $minArea -eq [double]::PositiveInfinity) {
+        return [double]::PositiveInfinity
+    }
+
+    $sumSquared = $sumArea * $sumArea
+    $sideSquared = $ShortSide * $ShortSide
+
+    return [math]::Max(
+        ($sideSquared * $maxArea) / $sumSquared,
+        $sumSquared / ($sideSquared * $minArea)
+    )
+}
+
+function Add-TreemapRow {
+    param(
+        [System.Collections.ArrayList]$Layout,
+        [object[]]$Row,
+        [double]$X,
+        [double]$Y,
+        [double]$Width,
+        [double]$Height,
+        [double]$Scale
+    )
+
+    if (-not $Row -or $Row.Count -eq 0 -or $Width -le 0 -or $Height -le 0) {
+        return [pscustomobject]@{
+            X = $X
+            Y = $Y
+            Width = $Width
+            Height = $Height
+        }
+    }
+
+    $rowArea = 0.0
+    foreach ($entry in $Row) {
+        $rowArea += [double]$entry.Size * $Scale
+    }
+
+    if ($rowArea -le 0) {
+        return [pscustomobject]@{
+            X = $X
+            Y = $Y
+            Width = $Width
+            Height = $Height
+        }
+    }
+
+    if ($Width -ge $Height) {
+        $rowHeight = [math]::Min($Height, $rowArea / $Width)
+        if ($rowHeight -le 0) {
+            $rowHeight = $Height
+        }
+
+        $offsetX = $X
+        $remainingRowWidth = $Width
+        for ($i = 0; $i -lt $Row.Count; $i++) {
+            $entry = $Row[$i]
+            $entryArea = [double]$entry.Size * $Scale
+            if ($i -eq $Row.Count - 1) {
+                $itemWidth = $remainingRowWidth
+            } else {
+                $itemWidth = [math]::Min($remainingRowWidth, $entryArea / $rowHeight)
+            }
+
+            [void]$Layout.Add([pscustomobject]@{
+                Item = $entry
+                Rect = [System.Drawing.RectangleF]::new(
+                    [float]$offsetX,
+                    [float]$Y,
+                    [float][math]::Max(0, $itemWidth),
+                    [float][math]::Max(0, $rowHeight)
+                )
+            })
+
+            $offsetX += $itemWidth
+            $remainingRowWidth -= $itemWidth
+        }
+
+        return [pscustomobject]@{
+            X = $X
+            Y = $Y + $rowHeight
+            Width = $Width
+            Height = [math]::Max(0, $Height - $rowHeight)
+        }
+    }
+
+    $rowWidth = [math]::Min($Width, $rowArea / $Height)
+    if ($rowWidth -le 0) {
+        $rowWidth = $Width
+    }
+
+    $offsetY = $Y
+    $remainingRowHeight = $Height
+    for ($i = 0; $i -lt $Row.Count; $i++) {
+        $entry = $Row[$i]
+        $entryArea = [double]$entry.Size * $Scale
+        if ($i -eq $Row.Count - 1) {
+            $itemHeight = $remainingRowHeight
+        } else {
+            $itemHeight = [math]::Min($remainingRowHeight, $entryArea / $rowWidth)
+        }
+
+        [void]$Layout.Add([pscustomobject]@{
+            Item = $entry
+            Rect = [System.Drawing.RectangleF]::new(
+                [float]$X,
+                [float]$offsetY,
+                [float][math]::Max(0, $rowWidth),
+                [float][math]::Max(0, $itemHeight)
+            )
+        })
+
+        $offsetY += $itemHeight
+        $remainingRowHeight -= $itemHeight
+    }
+
+    return [pscustomobject]@{
+        X = $X + $rowWidth
+        Y = $Y
+        Width = [math]::Max(0, $Width - $rowWidth)
+        Height = $Height
+    }
+}
+
+function New-TreemapLayout {
+    param(
+        [System.Drawing.Rectangle]$Bounds,
+        [object[]]$Items,
+        [double]$TotalSize
+    )
+
+    $layout = New-Object System.Collections.ArrayList
+    if (-not $Items -or $Items.Count -eq 0 -or $TotalSize -le 0 -or $Bounds.Width -le 0 -or $Bounds.Height -le 0) {
+        return $layout
+    }
+
+    $scale = ([double]$Bounds.Width * [double]$Bounds.Height) / $TotalSize
+    $available = [pscustomobject]@{
+        X = [double]$Bounds.X
+        Y = [double]$Bounds.Y
+        Width = [double]$Bounds.Width
+        Height = [double]$Bounds.Height
+    }
+
+    $row = @()
+    foreach ($item in $Items) {
+        if ($available.Width -le 0 -or $available.Height -le 0) {
+            break
+        }
+
+        $candidateRow = @($row + $item)
+        $shortSide = [math]::Min($available.Width, $available.Height)
+        $currentScore = Get-WorstAspectRatio -Row $row -ShortSide $shortSide -Scale $scale
+        $candidateScore = Get-WorstAspectRatio -Row $candidateRow -ShortSide $shortSide -Scale $scale
+
+        if ($row.Count -eq 0 -or $candidateScore -le $currentScore) {
+            $row = $candidateRow
+            continue
+        }
+
+        $available = Add-TreemapRow -Layout $layout -Row $row -X $available.X -Y $available.Y -Width $available.Width -Height $available.Height -Scale $scale
+        $row = @($item)
+    }
+
+    if ($row.Count -gt 0 -and $available.Width -gt 0 -and $available.Height -gt 0) {
+        $available = Add-TreemapRow -Layout $layout -Row $row -X $available.X -Y $available.Y -Width $available.Width -Height $available.Height -Scale $scale
+    }
+
+    return $layout
+}
+
+function Show-Treemap {
     param(
         [System.Drawing.Graphics]$Graphics,
         [System.Drawing.Rectangle]$Bounds,
@@ -314,7 +509,7 @@ function Draw-Treemap {
 
     if (-not $Items) { return }
 
-    $items = @($Items) | Sort-Object Size -Descending
+    $items = @($Items | Where-Object { $_.Size -gt 0 }) | Sort-Object Size -Descending
     if ($items.Count -eq 0) { return }
 
     $total = ($items | Measure-Object Size -Sum).Sum
@@ -325,28 +520,12 @@ function Draw-Treemap {
     $sf.Alignment = [System.Drawing.StringAlignment]::Center
     $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
 
-    $horizontal = $Bounds.Width -ge $Bounds.Height
-    $offsetX = $Bounds.X
-    $offsetY = $Bounds.Y
-    $remainingWidth = $Bounds.Width
-    $remainingHeight = $Bounds.Height
+    $layout = New-TreemapLayout -Bounds $Bounds -Items $items -TotalSize $total
 
-    for ($i = 0; $i -lt $items.Count; $i++) {
-        $item = $items[$i]
-        if ($horizontal) {
-            $width = [math]::Max(1, [int](($item.Size / $total) * $Bounds.Width))
-            if ($i -eq $items.Count - 1) { $width = $remainingWidth }
-            $rect = [System.Drawing.Rectangle]::new($offsetX, $offsetY, $width, $remainingHeight)
-            $offsetX += $width
-            $remainingWidth -= $width
-        } else {
-            $height = [math]::Max(1, [int](($item.Size / $total) * $Bounds.Height))
-            if ($i -eq $items.Count - 1) { $height = $remainingHeight }
-            $rect = [System.Drawing.Rectangle]::new($offsetX, $offsetY, $remainingWidth, $height)
-            $offsetY += $height
-            $remainingHeight -= $height
-        }
-
+    for ($i = 0; $i -lt $layout.Count; $i++) {
+        $entry = $layout[$i]
+        $item = $entry.Item
+        $rect = $entry.Rect
         $color = [System.Drawing.Color]::FromArgb(
             180,
             ((($i * 73) + 50) % 176) + 40,
@@ -355,7 +534,7 @@ function Draw-Treemap {
         )
         $brush = New-Object System.Drawing.SolidBrush $color
         $Graphics.FillRectangle($brush, $rect)
-        $Graphics.DrawRectangle([System.Drawing.Pens]::Black, $rect)
+        $Graphics.DrawRectangle([System.Drawing.Pens]::Black, $rect.X, $rect.Y, $rect.Width, $rect.Height)
 
         if ($rect.Width -gt 60 -and $rect.Height -gt 24) {
             $label = $item.Name
@@ -372,7 +551,7 @@ function Draw-Treemap {
     $sf.Dispose()
 }
 
-function Perform-Scan {
+function Start-Scan {
     param([bool]$setRoot = $true)
 
     $path = $txtPath.Text.Trim()
@@ -396,7 +575,7 @@ function Perform-Scan {
     $lblStatus.Text = "Analysis in progress..."
     $progressBar.Value = 0
     $lv.Items.Clear()
-    $treemapItems = @()
+    $script:treemapItems = @()
     $totalSize = 0
 
     try {
@@ -406,7 +585,7 @@ function Perform-Scan {
         if ($items.Count -gt 50) {
             $items = $items | Select-Object -First 50
         }
-        $treemapItems = $items
+        $script:treemapItems = $items
         $folderCount = ($items | Where-Object Type -eq 'Folder').Count
         $fileCount = ($items | Where-Object Type -eq 'File').Count
 
@@ -454,13 +633,13 @@ $btnBrowse.Add_Click({
     if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
         $txtPath.Text = $dialog.SelectedPath
         if ($chkAutoScan.Checked) {
-            Perform-Scan
+            Start-Scan
         }
     }
 })
 
 $btnScan.Add_Click({
-    Perform-Scan $true
+    Start-Scan $true
 })
 
 $btnRoot.Add_Click({
@@ -482,7 +661,7 @@ $btnRoot.Add_Click({
     }
 
     $txtPath.Text = $parentPath
-    Perform-Scan $true
+    Start-Scan $true
 })
 
 $btnDocs.Add_Click({
@@ -557,11 +736,13 @@ $btnAbout.Add_Click({
 })
 
 $panelMap.Add_Paint({
-    param($sender, $e)
+    param($control, $e)
+
+    [void]$control
     try {
         $e.Graphics.Clear([System.Drawing.Color]::White)
-        if ($treemapItems -and $treemapItems.Count -gt 0) {
-            Draw-Treemap -Graphics $e.Graphics -Bounds $panelMap.ClientRectangle -Items $treemapItems
+        if ($script:treemapItems -and $script:treemapItems.Count -gt 0) {
+            Show-Treemap -Graphics $e.Graphics -Bounds $panelMap.ClientRectangle -Items $script:treemapItems
         }
     } catch {
         [System.Windows.Forms.MessageBox]::Show("Error displaying treemap: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
