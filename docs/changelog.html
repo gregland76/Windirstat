@@ -114,6 +114,27 @@
     </header>
 
     <section class="release">
+      <h2>Version 1.11 <span class="tag">2026-04-21</span></h2>
+      <h3>Modifie</h3>
+      <ul>
+        <li>Amelioration de la robustesse du treemap pour eviter un panneau gauche vide dans certains dossiers OneDrive ou partiellement accessibles.</li>
+        <li>Ajout d'un fallback d'affichage par nombre d'elements lorsque les tailles mesurables sont nulles.</li>
+        <li>Renforcement du rafraichissement du treemap apres scan, deplacement du splitter et redimensionnement du panneau.</li>
+        <li>Stabilisation de l'affichage via un rendu bitmap explicite du treemap avant projection dans le panneau gauche.</li>
+      </ul>
+    </section>
+
+    <section class="release">
+      <h2>Version 1.10 <span class="tag">2026-04-21</span></h2>
+      <h3>Modifie</h3>
+      <ul>
+        <li>Ajout d'un splitter redimensionnable entre la zone treemap de gauche et la zone liste de droite.</li>
+        <li>Refonte du layout WinForms avec un <code>SplitContainer</code> pour ajuster dynamiquement la largeur des deux panneaux.</li>
+        <li>Durcissement de l'initialisation WinForms pour eviter l'erreur <code>SetCompatibleTextRenderingDefault</code> lors de relances successives dans le meme terminal PowerShell.</li>
+      </ul>
+    </section>
+
+    <section class="release">
       <h2>Version 1.9 <span class="tag">2026-04-19</span></h2>
       <h3>Modifie</h3>
       <ul>

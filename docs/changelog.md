@@ -3,6 +3,23 @@
 Ce document resume les evolutions de WinDirStat PowerShell.
 La version HTML equivalente est disponible dans `changelog.html`.
 
+## Version 1.11 - 2026-04-21
+
+### Modifie
+
+- Amelioration de la robustesse du treemap pour eviter un panneau gauche vide dans certains dossiers OneDrive ou partiellement accessibles.
+- Ajout d'un fallback d'affichage par nombre d'elements lorsque les tailles mesurables sont nulles.
+- Renforcement du rafraichissement du treemap apres scan, deplacement du splitter et redimensionnement du panneau.
+- Stabilisation de l'affichage via un rendu bitmap explicite du treemap avant projection dans le panneau gauche.
+
+## Version 1.10 - 2026-04-21
+
+### Modifie
+
+- Ajout d'un splitter redimensionnable entre la zone treemap de gauche et la zone liste de droite.
+- Refonte du layout WinForms avec un `SplitContainer` pour ajuster dynamiquement la largeur des deux panneaux.
+- Durcissement de l'initialisation WinForms pour eviter l'erreur `SetCompatibleTextRenderingDefault` lors de relances successives dans le meme terminal PowerShell.
+
 ## Version 1.9 - 2026-04-19
 
 ### Modifie

@@ -7,8 +7,15 @@
 
 Add-Type -AssemblyName System.Windows.Forms,System.Drawing
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-[System.Windows.Forms.Application]::EnableVisualStyles()
-[System.Windows.Forms.Application]::SetCompatibleTextRenderingDefault($false)
+if (-not $global:WinDirStatWinFormsInitialized) {
+    [System.Windows.Forms.Application]::EnableVisualStyles()
+    try {
+        [System.Windows.Forms.Application]::SetCompatibleTextRenderingDefault($false)
+    } catch [System.InvalidOperationException] {
+        # Happens when WinForms has already created an IWin32Window in this process.
+    }
+    $global:WinDirStatWinFormsInitialized = $true
+}
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "WinDirStat PowerShell"
@@ -58,16 +65,25 @@ $btnAbout.Size = [System.Drawing.Size]::new(70, 24)
 $btnAbout.Text = "About"
 $btnAbout.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
 
+$splitMain = New-Object System.Windows.Forms.SplitContainer
+$splitMain.Location = [System.Drawing.Point]::new(10, 70)
+$splitMain.Size = [System.Drawing.Size]::new(900, 480)
+$splitMain.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
+$splitMain.Orientation = [System.Windows.Forms.Orientation]::Vertical
+$splitMain.SplitterWidth = 6
+$splitMain.Panel1MinSize = 250
+$splitMain.Panel2MinSize = 260
+$splitMain.SplitterDistance = 580
+
 $lblHint = New-Object System.Windows.Forms.Label
-$lblHint.Location = [System.Drawing.Point]::new(600, 70)
-$lblHint.Size = [System.Drawing.Size]::new(310, 30)
+$lblHint.Dock = [System.Windows.Forms.DockStyle]::Top
+$lblHint.Height = 30
 $lblHint.Text = "Double-click a folder to scan it, or right-click an item for more actions."
 $lblHint.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
 $lblHint.ForeColor = [System.Drawing.Color]::Black
 $lblHint.BackColor = [System.Drawing.Color]::LightYellow
 $lblHint.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
 $lblHint.Font = New-Object System.Drawing.Font("Arial", 8, [System.Drawing.FontStyle]::Bold)
-$lblHint.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
 
 $lblStatus = New-Object System.Windows.Forms.Label
 $lblStatus.Location = [System.Drawing.Point]::new(10, 560)
@@ -84,15 +100,12 @@ $progressBar.Value = 0
 $progressBar.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
 
 $panelMap = New-Object System.Windows.Forms.Panel
-$panelMap.Location = [System.Drawing.Point]::new(10, 70)
-$panelMap.Size = [System.Drawing.Size]::new(580, 480)
+$panelMap.Dock = [System.Windows.Forms.DockStyle]::Fill
 $panelMap.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-$panelMap.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left
 $panelMap.BackColor = [System.Drawing.Color]::White
 
 $lv = New-Object System.Windows.Forms.ListView
-$lv.Location = [System.Drawing.Point]::new(600, 102)
-$lv.Size = [System.Drawing.Size]::new(310, 448)
+$lv.Dock = [System.Windows.Forms.DockStyle]::Fill
 $lv.View = 'Details'
 $lv.FullRowSelect = $true
 $lv.GridLines = $true
@@ -133,7 +146,6 @@ $g.Dispose(); $brush.Dispose(); $pen.Dispose()
 $imageList.Images.Add('File', $fileBitmap)
 
 $lv.SmallImageList = $imageList
-$lv.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Right
 
 $listContextMenu = New-Object System.Windows.Forms.ContextMenuStrip
 $menuOpenItem = $listContextMenu.Items.Add("Open")
@@ -141,12 +153,16 @@ $menuOpenFolder = $listContextMenu.Items.Add("Open Folder")
 
 $lv.ContextMenuStrip = $listContextMenu
 
-function Update-Layout {
-    $newPanelWidth = [math]::Max(250, $form.ClientSize.Width - $lv.Width - 30)
-    $panelMap.Width = $newPanelWidth
-}
+$splitMain.Panel1.Controls.Add($panelMap)
+$splitMain.Panel2.Controls.Add($lv)
+$splitMain.Panel2.Controls.Add($lblHint)
+$splitMain.Add_SplitterMoved({
+    Update-TreemapDisplay
+})
 
-$form.Add_Resize({ Update-Layout })
+$panelMap.Add_Resize({
+    Update-TreemapDisplay
+})
 
 $lv.Add_DoubleClick({
     if ($lv.SelectedItems.Count -eq 0) { return }
@@ -201,15 +217,22 @@ $menuOpenFolder.Add_Click({
     Invoke-ListViewItemFolderOpen -Item $lv.SelectedItems[0]
 })
 
-$form.Controls.AddRange(@($txtPath, $btnBrowse, $btnScan, $btnRoot, $btnDocs, $chkAutoScan, $btnAbout, $lblHint, $lblStatus, $progressBar, $panelMap, $lv))
+$form.Controls.AddRange(@($txtPath, $btnBrowse, $btnScan, $btnRoot, $btnDocs, $chkAutoScan, $btnAbout, $splitMain, $lblStatus, $progressBar))
 $form.Add_Shown({
-    Update-Layout
-    $panelMap.Invalidate()
-    $panelMap.Refresh()
+    Update-TreemapDisplay
 })
 
 $script:treemapItems = @()
+$script:treemapHitRegions = @()
+$script:lastTreemapTooltipText = ""
+$script:panelMapBitmap = $null
 $totalSize = 0
+
+$treemapToolTip = New-Object System.Windows.Forms.ToolTip
+$treemapToolTip.InitialDelay = 120
+$treemapToolTip.ReshowDelay = 80
+$treemapToolTip.AutoPopDelay = 5000
+$treemapToolTip.ShowAlways = $true
 
 function Format-Size {
     param([int64]$Size)
@@ -509,7 +532,37 @@ function Show-Treemap {
 
     if (-not $Items) { return }
 
-    $items = @($Items | Where-Object { $_.Size -gt 0 }) | Sort-Object Size -Descending
+    $items = @(
+        $Items |
+        Where-Object { $_.Size -gt 0 } |
+        ForEach-Object {
+            [PSCustomObject]@{
+                Name        = $_.Name
+                FullName    = $_.FullName
+                Type        = $_.Type
+                Size        = [int64]$_.Size
+                DisplaySize = [int64]$_.Size
+            }
+        }
+    ) | Sort-Object Size -Descending
+
+    # Fallback: some paths return only 0-byte sizes (permissions/placeholders); keep a visible treemap by count.
+    if ($items.Count -eq 0) {
+        $items = @(
+            $Items |
+            Where-Object { $_ } |
+            ForEach-Object {
+                [PSCustomObject]@{
+                    Name        = $_.Name
+                    FullName    = $_.FullName
+                    Type        = $_.Type
+                    Size        = 1
+                    DisplaySize = [int64]$_.Size
+                }
+            }
+        )
+    }
+
     if ($items.Count -eq 0) { return }
 
     $total = ($items | Measure-Object Size -Sum).Sum
@@ -522,10 +575,50 @@ function Show-Treemap {
 
     $layout = New-TreemapLayout -Bounds $Bounds -Items $items -TotalSize $total
 
+    if ($layout.Count -eq 0 -and $items.Count -gt 0 -and $Bounds.Width -gt 0 -and $Bounds.Height -gt 0) {
+        $fallbackLayout = New-Object System.Collections.ArrayList
+        $offsetX = [double]$Bounds.X
+        $remainingWidth = [double]$Bounds.Width
+
+        for ($i = 0; $i -lt $items.Count; $i++) {
+            if ($i -eq $items.Count - 1) {
+                $itemWidth = $remainingWidth
+            } else {
+                $itemWidth = [double]$Bounds.Width / $items.Count
+            }
+
+            [void]$fallbackLayout.Add([pscustomobject]@{
+                Item = $items[$i]
+                Rect = [System.Drawing.RectangleF]::new(
+                    [float]$offsetX,
+                    [float]$Bounds.Y,
+                    [float][math]::Max(0, $itemWidth),
+                    [float]$Bounds.Height
+                )
+            })
+
+            $offsetX += $itemWidth
+            $remainingWidth -= $itemWidth
+        }
+
+        $layout = $fallbackLayout
+    }
+
+    $script:treemapHitRegions = @(
+        $layout | ForEach-Object {
+            [PSCustomObject]@{
+                Rect = $_.Rect
+                Item = $_.Item
+            }
+        }
+    )
+
     for ($i = 0; $i -lt $layout.Count; $i++) {
         $entry = $layout[$i]
         $item = $entry.Item
         $rect = $entry.Rect
+        $drawWidth = [float][math]::Max(1, $rect.Width)
+        $drawHeight = [float][math]::Max(1, $rect.Height)
         $color = [System.Drawing.Color]::FromArgb(
             180,
             ((($i * 73) + 50) % 176) + 40,
@@ -533,15 +626,15 @@ function Show-Treemap {
             ((($i * 53) + 110) % 176) + 40
         )
         $brush = New-Object System.Drawing.SolidBrush $color
-        $Graphics.FillRectangle($brush, $rect)
-        $Graphics.DrawRectangle([System.Drawing.Pens]::Black, $rect.X, $rect.Y, $rect.Width, $rect.Height)
+        $Graphics.FillRectangle($brush, [float]$rect.X, [float]$rect.Y, $drawWidth, $drawHeight)
+        $Graphics.DrawRectangle([System.Drawing.Pens]::Black, [float]$rect.X, [float]$rect.Y, $drawWidth, $drawHeight)
 
-        if ($rect.Width -gt 60 -and $rect.Height -gt 24) {
+        if ($drawWidth -gt 60 -and $drawHeight -gt 24) {
             $label = $item.Name
             if ($label.Length -gt 24) {
                 $label = $label.Substring(0, 21) + "..."
             }
-            $rectF = [System.Drawing.RectangleF]::new($rect.X, $rect.Y, $rect.Width, $rect.Height)
+            $rectF = [System.Drawing.RectangleF]::new([float]$rect.X, [float]$rect.Y, $drawWidth, $drawHeight)
             $Graphics.DrawString($label, $font, [System.Drawing.Brushes]::Black, $rectF, $sf)
         }
         $brush.Dispose()
@@ -550,6 +643,86 @@ function Show-Treemap {
     $font.Dispose()
     $sf.Dispose()
 }
+
+function Update-TreemapDisplay {
+    if (-not $panelMap -or $panelMap.IsDisposed) { return }
+
+    $width = $panelMap.ClientSize.Width
+    $height = $panelMap.ClientSize.Height
+    if ($width -le 0 -or $height -le 0) { return }
+
+    if ($script:panelMapBitmap) {
+        $panelMap.BackgroundImage = $null
+        $script:panelMapBitmap.Dispose()
+        $script:panelMapBitmap = $null
+    }
+
+    $bitmap = New-Object System.Drawing.Bitmap $width, $height
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+
+    try {
+        $graphics.Clear([System.Drawing.Color]::White)
+        $script:treemapHitRegions = @()
+        $script:lastTreemapTooltipText = ""
+        $treemapToolTip.SetToolTip($panelMap, "")
+        if ($script:treemapItems -and @($script:treemapItems).Count -gt 0) {
+            $bounds = [System.Drawing.Rectangle]::new(0, 0, $width, $height)
+            Show-Treemap -Graphics $graphics -Bounds $bounds -Items $script:treemapItems
+        }
+    } finally {
+        $graphics.Dispose()
+    }
+
+    $script:panelMapBitmap = $bitmap
+    $panelMap.BackgroundImage = $script:panelMapBitmap
+    $panelMap.BackgroundImageLayout = [System.Windows.Forms.ImageLayout]::None
+    $panelMap.Invalidate()
+}
+
+$panelMap.Add_MouseMove({
+    param($control, $e)
+
+    [void]$control
+
+    if (-not $script:treemapHitRegions -or $script:treemapHitRegions.Count -eq 0) {
+        if ($script:lastTreemapTooltipText) {
+            $treemapToolTip.SetToolTip($panelMap, "")
+            $script:lastTreemapTooltipText = ""
+        }
+        return
+    }
+
+    $hoveredRegion = $null
+    foreach ($region in $script:treemapHitRegions) {
+        if ($region.Rect.Contains([float]$e.X, [float]$e.Y)) {
+            $hoveredRegion = $region
+            break
+        }
+    }
+
+    if (-not $hoveredRegion) {
+        if ($script:lastTreemapTooltipText) {
+            $treemapToolTip.SetToolTip($panelMap, "")
+            $script:lastTreemapTooltipText = ""
+        }
+        return
+    }
+
+    $item = $hoveredRegion.Item
+    $displaySize = if ($item.PSObject.Properties['DisplaySize']) { [int64]$item.DisplaySize } else { [int64]$item.Size }
+    $itemType = if ($item.Type) { [string]$item.Type } else { 'Item' }
+    $tooltipText = "$($item.Name)`n$itemType - $(Format-Size $displaySize)"
+
+    if ($tooltipText -ne $script:lastTreemapTooltipText) {
+        $treemapToolTip.SetToolTip($panelMap, $tooltipText)
+        $script:lastTreemapTooltipText = $tooltipText
+    }
+})
+
+$panelMap.Add_MouseLeave({
+    $treemapToolTip.SetToolTip($panelMap, "")
+    $script:lastTreemapTooltipText = ""
+})
 
 function Start-Scan {
     param([bool]$setRoot = $true)
@@ -613,11 +786,12 @@ function Start-Scan {
 
         if ($items.Count -eq 0) {
             $lblStatus.Text = "Analysis completed: no items found in the folder."
+        } elseif ($totalSize -le 0) {
+            $lblStatus.Text = "Analysis completed - 0 B measurable size. Treemap displayed by item count."
         } else {
             $lblStatus.Text = "Analysis completed - Total: $(Format-Size $totalSize) - $folderCount folders, $fileCount files - $(($items.Count)) items displayed."
         }
-        $panelMap.Invalidate()
-        $panelMap.Refresh()
+        Update-TreemapDisplay
     } catch {
         [System.Windows.Forms.MessageBox]::Show("Error during analysis: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
     } finally {
@@ -733,20 +907,6 @@ $btnAbout.Add_Click({
 
     $aboutForm.Controls.AddRange(@($lblDev, $lblSite, $lblMail, $btnClose))
     [void]$aboutForm.ShowDialog()
-})
-
-$panelMap.Add_Paint({
-    param($control, $e)
-
-    [void]$control
-    try {
-        $e.Graphics.Clear([System.Drawing.Color]::White)
-        if ($script:treemapItems -and $script:treemapItems.Count -gt 0) {
-            Show-Treemap -Graphics $e.Graphics -Bounds $panelMap.ClientRectangle -Items $script:treemapItems
-        }
-    } catch {
-        [System.Windows.Forms.MessageBox]::Show("Error displaying treemap: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
-    }
 })
 
 [void]$form.ShowDialog()
