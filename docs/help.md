@@ -11,8 +11,6 @@ avec une vue liste et une visualisation treemap.
 2. Cliquez sur **Parcourir** pour choisir un dossier.
 3. Cliquez sur **Analyser** (ou laissez le scan automatique actif).
 
-Capture suggeree : `screenshots/01-interface-principale.png`
-
 ## 3. Utilisation de l'interface
 
 - **Parcourir** : sélectionne un dossier à analyser.
@@ -20,8 +18,6 @@ Capture suggeree : `screenshots/01-interface-principale.png`
 - **Dossier parent** : remonte d'un niveau puis relance l'analyse.
 - **Aide** : ouvre la documentation du projet.
 - **À propos** : affiche les informations de l'application.
-
-Capture suggeree : `screenshots/02-apres-scan.png`
 
 ## 4. Liste des elements
 
@@ -39,8 +35,6 @@ Actions disponibles :
   - ouvrir le fichier/dossier,
   - ouvrir le dossier contenant.
 
-Capture suggeree : `screenshots/03-menu-contextuel.png`
-
 ## 5. Treemap
 
 Le panneau de gauche affiche une treemap des elements les plus volumineux.
@@ -56,8 +50,6 @@ Le layout privilegie des zones plus carrees et place les plus gros elements en h
 ## 7. Contact
 
 Voir la fenêtre **À propos** pour les informations de contact.
-
-Capture suggeree : `screenshots/04-fenetre-about.png`
 
 ## 8. Historique des mises a jour
 

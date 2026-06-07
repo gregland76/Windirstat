@@ -1,5 +1,5 @@
-﻿# WinDirStat PowerShell - Version 1.12
-# Développé par Gregory HARGOUS
+﻿# WinDirStat PowerShell - Version 1.13
+# Developpe par Gregory HARGOUS
 # Date : 07 juin 2026
 # Description : Un script PowerShell pour analyser l'utilisation du disque avec une visualisation treemap
 # Historique disponible dans docs/changelog.md et docs/changelog.html
@@ -17,102 +17,193 @@ if (-not $global:WinDirStatWinFormsInitialized) {
     $global:WinDirStatWinFormsInitialized = $true
 }
 
+# === Formulaire principal modernise ===
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "WinDirStat PowerShell"
-$form.ClientSize = [System.Drawing.Size]::new(920, 640)
+$form.ClientSize = [System.Drawing.Size]::new(960, 660)
 $form.StartPosition = "CenterScreen"
-$form.Font = New-Object System.Drawing.Font("Arial", 9)
+$form.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+$form.BackColor = [System.Drawing.Color]::FromArgb(245, 247, 250)
 
+# --- Barre de titre personnalisee ---
+$titleBar = New-Object System.Windows.Forms.Panel
+$titleBar.Size = [System.Drawing.Size]::new(960, 42)
+$titleBar.Location = [System.Drawing.Point]::new(0, 0)
+$titleBar.BackColor = [System.Drawing.Color]::FromArgb(30, 50, 100)
+$titleBar.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
+
+# Mini logo dans la barre de titre
+$titleLogoBitmap = New-Object System.Drawing.Bitmap(28, 28)
+$tlg = [System.Drawing.Graphics]::FromImage($titleLogoBitmap)
+$tlg.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+$tlg.Clear([System.Drawing.Color]::Transparent)
+$tlBrush1 = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(80, 180, 255))
+$tlg.FillEllipse($tlBrush1, 2, 2, 24, 24)
+$tlBrush2 = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 200, 60))
+$tlBrush3 = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 100, 80))
+$tlBrush4 = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(80, 200, 120))
+$tlg.FillRectangle($tlBrush2, 7, 7, 10, 6)
+$tlg.FillRectangle($tlBrush3, 17, 7, 5, 6)
+$tlg.FillRectangle($tlBrush4, 7, 13, 7, 8)
+$tlBrush5 = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(160, 120, 220))
+$tlg.FillRectangle($tlBrush5, 14, 13, 8, 8)
+$tlg.Dispose(); $tlBrush1.Dispose(); $tlBrush2.Dispose(); $tlBrush3.Dispose(); $tlBrush4.Dispose(); $tlBrush5.Dispose()
+
+$titleLogoBox = New-Object System.Windows.Forms.PictureBox
+$titleLogoBox.Image = $titleLogoBitmap
+$titleLogoBox.Size = [System.Drawing.Size]::new(28, 28)
+$titleLogoBox.Location = [System.Drawing.Point]::new(12, 7)
+$titleLogoBox.BackColor = [System.Drawing.Color]::Transparent
+$titleLogoBox.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::CenterImage
+
+$lblAppTitle = New-Object System.Windows.Forms.Label
+$lblAppTitle.Text = "WinDirStat PowerShell"
+$lblAppTitle.Location = [System.Drawing.Point]::new(46, 0)
+$lblAppTitle.Size = [System.Drawing.Size]::new(280, 42)
+$lblAppTitle.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+$lblAppTitle.ForeColor = [System.Drawing.Color]::White
+$lblAppTitle.BackColor = [System.Drawing.Color]::Transparent
+$lblAppTitle.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+
+$lblAppSub = New-Object System.Windows.Forms.Label
+$lblAppSub.Text = "v1.13 - Analyse d'espace disque"
+$lblAppSub.Location = [System.Drawing.Point]::new(330, 0)
+$lblAppSub.Size = [System.Drawing.Size]::new(620, 42)
+$lblAppSub.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+$lblAppSub.ForeColor = [System.Drawing.Color]::FromArgb(160, 190, 230)
+$lblAppSub.BackColor = [System.Drawing.Color]::Transparent
+$lblAppSub.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+$lblAppSub.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
+
+$titleBar.Controls.AddRange(@($titleLogoBox, $lblAppTitle, $lblAppSub))
+
+# --- Barre d'outils (fond clair) ---
+$toolbarPanel = New-Object System.Windows.Forms.Panel
+$toolbarPanel.Location = [System.Drawing.Point]::new(0, 42)
+$toolbarPanel.Size = [System.Drawing.Size]::new(960, 80)
+$toolbarPanel.BackColor = [System.Drawing.Color]::White
+$toolbarPanel.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
+
+# Separateur sous la barre de titre
+$sepTitle = New-Object System.Windows.Forms.Label
+$sepTitle.Size = [System.Drawing.Size]::new(960, 1)
+$sepTitle.Location = [System.Drawing.Point]::new(0, 0)
+$sepTitle.BackColor = [System.Drawing.Color]::FromArgb(200, 210, 220)
+$sepTitle.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
+
+# Etiquette "Chemin :"
+$lblPathLabel = New-Object System.Windows.Forms.Label
+$lblPathLabel.Text = "Chemin :"
+$lblPathLabel.Location = [System.Drawing.Point]::new(12, 8)
+$lblPathLabel.Size = [System.Drawing.Size]::new(62, 36)
+$lblPathLabel.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+$lblPathLabel.ForeColor = [System.Drawing.Color]::FromArgb(60, 60, 60)
+$lblPathLabel.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+
+# TextBox modernisee
 $txtPath = New-Object System.Windows.Forms.TextBox
-$txtPath.Location = [System.Drawing.Point]::new(10, 10)
-$txtPath.Size = [System.Drawing.Size]::new(740, 24)
+$txtPath.Location = [System.Drawing.Point]::new(76, 8)
+$txtPath.Size = [System.Drawing.Size]::new(636, 36)
+$txtPath.Font = New-Object System.Drawing.Font("Segoe UI", 10)
+$txtPath.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
+$txtPath.BackColor = [System.Drawing.Color]::FromArgb(248, 249, 250)
 $txtPath.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
 
-$btnBrowse = New-Object System.Windows.Forms.Button
-$btnBrowse.Location = [System.Drawing.Point]::new(760, 10)
-$btnBrowse.Size = [System.Drawing.Size]::new(70, 24)
-$btnBrowse.Text = "Parcourir"
-$btnBrowse.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
+# Fonction helper pour creer des boutons modernes
+function New-ModernButton {
+    param($Text, $X, $Y, $Width, $Height, $BgColor, $Anchor)
+    $btn = New-Object System.Windows.Forms.Button
+    $btn.Text = $Text
+    $btn.Location = [System.Drawing.Point]::new($X, $Y)
+    $btn.Size = [System.Drawing.Size]::new($Width, $Height)
+    $btn.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
+    $btn.BackColor = $BgColor
+    $btn.ForeColor = [System.Drawing.Color]::White
+    $btn.Font = New-Object System.Drawing.Font("Segoe UI", 8, [System.Drawing.FontStyle]::Bold)
+    $btn.FlatAppearance.BorderSize = 0
+    $btn.Cursor = [System.Windows.Forms.Cursors]::Hand
+    $btn.TabStop = $false
+    $btn.Anchor = $Anchor
+    return $btn
+}
 
-$btnScan = New-Object System.Windows.Forms.Button
-$btnScan.Location = [System.Drawing.Point]::new(840, 10)
-$btnScan.Size = [System.Drawing.Size]::new(70, 24)
-$btnScan.Text = "Analyser"
-$btnScan.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
+# Ligne 1 : Parcourir puis Analyser
+$btnBrowse = New-ModernButton -Text "Parcourir" -X 720 -Y 8 -Width 110 -Height 28 -BgColor ([System.Drawing.Color]::FromArgb(30, 100, 200)) -Anchor ([System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right)
+$btnScan = New-ModernButton -Text "Analyser" -X 838 -Y 8 -Width 100 -Height 28 -BgColor ([System.Drawing.Color]::FromArgb(0, 150, 100)) -Anchor ([System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right)
 
+# Ligne 2 : checkbox + boutons secondaires
 $chkAutoScan = New-Object System.Windows.Forms.CheckBox
-$chkAutoScan.Location = [System.Drawing.Point]::new(10, 40)
-$chkAutoScan.Size = [System.Drawing.Size]::new(400, 24)
-$chkAutoScan.Text = "Analyser automatiquement après sélection du dossier"
+$chkAutoScan.Location = [System.Drawing.Point]::new(12, 52)
+$chkAutoScan.Size = [System.Drawing.Size]::new(400, 22)
+$chkAutoScan.Text = "Analyser automatiquement apres selection du dossier"
 $chkAutoScan.Checked = $true
+$chkAutoScan.Font = New-Object System.Drawing.Font("Segoe UI", 8)
+$chkAutoScan.ForeColor = [System.Drawing.Color]::FromArgb(100, 100, 100)
 $chkAutoScan.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Left
 
-$btnRoot = New-Object System.Windows.Forms.Button
-$btnRoot.Location = [System.Drawing.Point]::new(680, 40)
-$btnRoot.Size = [System.Drawing.Size]::new(70, 24)
-$btnRoot.Text = "Dossier parent"
-$btnRoot.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
+$btnRoot = New-ModernButton -Text "Dossier parent" -X 690 -Y 50 -Width 110 -Height 26 -BgColor ([System.Drawing.Color]::FromArgb(120, 130, 150)) -Anchor ([System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right)
+$btnDocs = New-ModernButton -Text "Aide" -X 806 -Y 50 -Width 55 -Height 26 -BgColor ([System.Drawing.Color]::FromArgb(140, 120, 180)) -Anchor ([System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right)
+$btnAbout = New-ModernButton -Text "A propos" -X 867 -Y 50 -Width 75 -Height 26 -BgColor ([System.Drawing.Color]::FromArgb(30, 50, 100)) -Anchor ([System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right)
 
-$btnDocs = New-Object System.Windows.Forms.Button
-$btnDocs.Location = [System.Drawing.Point]::new(760, 40)
-$btnDocs.Size = [System.Drawing.Size]::new(70, 24)
-$btnDocs.Text = "Aide"
-$btnDocs.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
+$toolbarPanel.Controls.AddRange(@($sepTitle, $lblPathLabel, $txtPath, $btnScan, $btnBrowse, $chkAutoScan, $btnRoot, $btnDocs, $btnAbout))
 
-$btnAbout = New-Object System.Windows.Forms.Button
-$btnAbout.Location = [System.Drawing.Point]::new(840, 40)
-$btnAbout.Size = [System.Drawing.Size]::new(70, 24)
-$btnAbout.Text = "À propos"
-$btnAbout.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
-
+# --- SplitContainer principal ---
 $splitMain = New-Object System.Windows.Forms.SplitContainer
-$splitMain.Location = [System.Drawing.Point]::new(10, 70)
-$splitMain.Size = [System.Drawing.Size]::new(900, 480)
+$splitMain.Location = [System.Drawing.Point]::new(8, 130)
+$splitMain.Size = [System.Drawing.Size]::new(944, 490)
 $splitMain.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
 $splitMain.Orientation = [System.Windows.Forms.Orientation]::Vertical
-$splitMain.SplitterWidth = 6
+$splitMain.SplitterWidth = 5
 $splitMain.Panel1MinSize = 250
 $splitMain.Panel2MinSize = 260
 $splitMain.SplitterDistance = 580
+$splitMain.BackColor = [System.Drawing.Color]::FromArgb(200, 210, 220)
 
-$lblHint = New-Object System.Windows.Forms.Label
-$lblHint.Dock = [System.Windows.Forms.DockStyle]::Top
-$lblHint.Height = 30
-$lblHint.Text = "Double-cliquez sur un dossier pour l'analyser, ou faites un clic droit pour plus d'actions."
-$lblHint.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
-$lblHint.ForeColor = [System.Drawing.Color]::Black
-$lblHint.BackColor = [System.Drawing.Color]::LightYellow
-$lblHint.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-$lblHint.Font = New-Object System.Drawing.Font("Arial", 8, [System.Drawing.FontStyle]::Bold)
-
-$lblStatus = New-Object System.Windows.Forms.Label
-$lblStatus.Location = [System.Drawing.Point]::new(10, 560)
-$lblStatus.Size = [System.Drawing.Size]::new(900, 24)
-$lblStatus.Text = "Sélectionnez un dossier ou un lecteur, puis cliquez sur Analyser."
-$lblStatus.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
-
-$progressBar = New-Object System.Windows.Forms.ProgressBar
-$progressBar.Location = [System.Drawing.Point]::new(10, 590)
-$progressBar.Size = [System.Drawing.Size]::new(900, 20)
-$progressBar.Minimum = 0
-$progressBar.Maximum = 100
-$progressBar.Value = 0
-$progressBar.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
+# --- Panneau Treemap ---
+$panelMapContainer = New-Object System.Windows.Forms.Panel
+$panelMapContainer.Dock = [System.Windows.Forms.DockStyle]::Fill
+$panelMapContainer.Padding = [System.Windows.Forms.Padding]::new(1)
+$panelMapContainer.BackColor = [System.Drawing.Color]::FromArgb(180, 190, 200)
 
 $panelMap = New-Object System.Windows.Forms.Panel
 $panelMap.Dock = [System.Windows.Forms.DockStyle]::Fill
-$panelMap.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
+$panelMap.BorderStyle = [System.Windows.Forms.BorderStyle]::None
 $panelMap.BackColor = [System.Drawing.Color]::White
+
+$panelMapContainer.Controls.Add($panelMap)
+
+# --- Panneau Liste ---
+$panelListContainer = New-Object System.Windows.Forms.Panel
+$panelListContainer.Dock = [System.Windows.Forms.DockStyle]::Fill
+$panelListContainer.BackColor = [System.Drawing.Color]::White
+
+# Indice d'utilisation moderne
+$lblHint = New-Object System.Windows.Forms.Label
+$lblHint.Dock = [System.Windows.Forms.DockStyle]::Top
+$lblHint.Height = 26
+$lblHint.Text = "  Double-cliquez sur un dossier pour l'analyser, ou faites un clic droit pour plus d'actions."
+$lblHint.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+$lblHint.ForeColor = [System.Drawing.Color]::FromArgb(80, 100, 130)
+$lblHint.BackColor = [System.Drawing.Color]::FromArgb(235, 240, 248)
+$lblHint.Font = New-Object System.Drawing.Font("Segoe UI", 8)
 
 $lv = New-Object System.Windows.Forms.ListView
 $lv.Dock = [System.Windows.Forms.DockStyle]::Fill
 $lv.View = 'Details'
 $lv.FullRowSelect = $true
-$lv.GridLines = $true
+$lv.GridLines = $false
+$lv.BorderStyle = [System.Windows.Forms.BorderStyle]::None
+$lv.HeaderStyle = [System.Windows.Forms.ColumnHeaderStyle]::Nonclickable
 $lv.Columns.Add("Objet", 160) | Out-Null
 $lv.Columns.Add("Type", 70) | Out-Null
 $lv.Columns.Add("Taille", 80) | Out-Null
 $lv.Columns.Add("%", 50) | Out-Null
+
+$lv.BackColor = [System.Drawing.Color]::White
+$lv.ForeColor = [System.Drawing.Color]::FromArgb(40, 40, 40)
+
+$panelListContainer.Controls.Add($lv)
+$panelListContainer.Controls.Add($lblHint)
 
 $imageList = New-Object System.Windows.Forms.ImageList
 $imageList.ImageSize = [System.Drawing.Size]::new(16, 16)
@@ -153,9 +244,8 @@ $menuOpenFolder = $listContextMenu.Items.Add("Ouvrir le dossier")
 
 $lv.ContextMenuStrip = $listContextMenu
 
-$splitMain.Panel1.Controls.Add($panelMap)
-$splitMain.Panel2.Controls.Add($lv)
-$splitMain.Panel2.Controls.Add($lblHint)
+$splitMain.Panel1.Controls.Add($panelMapContainer)
+$splitMain.Panel2.Controls.Add($panelListContainer)
 $splitMain.Add_SplitterMoved({
     Update-TreemapDisplay
 })
@@ -168,9 +258,9 @@ $lv.Add_DoubleClick({
     if ($lv.SelectedItems.Count -eq 0) { return }
     $item = $lv.SelectedItems[0]
     if ($item.SubItems[1].Text -eq 'Dossier' -and $item.Tag) {
-            $txtPath.Text = $item.Tag
-            Start-Scan $false
-        }
+        $txtPath.Text = $item.Tag
+        Start-Scan $false
+    }
 })
 
 $lv.Add_MouseDown({
@@ -217,7 +307,40 @@ $menuOpenFolder.Add_Click({
     Invoke-ListViewItemFolderOpen -Item $lv.SelectedItems[0]
 })
 
-$form.Controls.AddRange(@($txtPath, $btnBrowse, $btnScan, $btnRoot, $btnDocs, $chkAutoScan, $btnAbout, $splitMain, $lblStatus, $progressBar))
+# --- Barre d'etat modernisee ---
+$statusBar = New-Object System.Windows.Forms.Panel
+$statusBar.Size = [System.Drawing.Size]::new(960, 30)
+$statusBar.Location = [System.Drawing.Point]::new(0, 630)
+$statusBar.BackColor = [System.Drawing.Color]::FromArgb(240, 242, 245)
+$statusBar.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
+
+$sepStatus = New-Object System.Windows.Forms.Label
+$sepStatus.Size = [System.Drawing.Size]::new(960, 1)
+$sepStatus.Location = [System.Drawing.Point]::new(0, 0)
+$sepStatus.BackColor = [System.Drawing.Color]::FromArgb(200, 210, 220)
+$sepStatus.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
+
+$lblStatus = New-Object System.Windows.Forms.Label
+$lblStatus.Location = [System.Drawing.Point]::new(12, 2)
+$lblStatus.Size = [System.Drawing.Size]::new(936, 26)
+$lblStatus.Text = "  Selectionnez un dossier ou un lecteur, puis cliquez sur Analyser."
+$lblStatus.Font = New-Object System.Drawing.Font("Segoe UI", 8)
+$lblStatus.ForeColor = [System.Drawing.Color]::FromArgb(100, 110, 130)
+$lblStatus.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+$lblStatus.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
+
+$progressBar = New-Object System.Windows.Forms.ProgressBar
+$progressBar.Location = [System.Drawing.Point]::new(0, 636)
+$progressBar.Size = [System.Drawing.Size]::new(960, 4)
+$progressBar.Minimum = 0
+$progressBar.Maximum = 100
+$progressBar.Value = 0
+$progressBar.Style = [System.Windows.Forms.ProgressBarStyle]::Continuous
+$progressBar.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
+
+$statusBar.Controls.AddRange(@($sepStatus, $lblStatus))
+
+$form.Controls.AddRange(@($titleBar, $toolbarPanel, $splitMain, $statusBar, $progressBar))
 $form.Add_Shown({
     Update-TreemapDisplay
 })
@@ -250,14 +373,14 @@ function Invoke-ListViewItemOpen {
 
     $targetPath = [string]$Item.Tag
     if (-not (Test-Path -LiteralPath $targetPath)) {
-        [System.Windows.Forms.MessageBox]::Show("L'élément sélectionné n'existe plus.", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("L'element selectionne n'existe plus.", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
         return
     }
 
     try {
         Start-Process -FilePath $targetPath | Out-Null
     } catch {
-        [System.Windows.Forms.MessageBox]::Show("Impossible d'ouvrir l'élément sélectionné : $_", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Impossible d'ouvrir l'element selectionne : $_", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
     }
 }
 
@@ -268,7 +391,7 @@ function Invoke-ListViewItemFolderOpen {
 
     $targetPath = [string]$Item.Tag
     if (-not (Test-Path -LiteralPath $targetPath)) {
-        [System.Windows.Forms.MessageBox]::Show("L'élément sélectionné n'existe plus.", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("L'element selectionne n'existe plus.", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
         return
     }
 
@@ -546,7 +669,6 @@ function Show-Treemap {
         }
     ) | Sort-Object Size -Descending
 
-    # Fallback: some paths return only 0-byte sizes (permissions/placeholders); keep a visible treemap by count.
     if ($items.Count -eq 0) {
         $items = @(
             $Items |
@@ -710,7 +832,7 @@ $panelMap.Add_MouseMove({
 
     $item = $hoveredRegion.Item
     $displaySize = if ($item.PSObject.Properties['DisplaySize']) { [int64]$item.DisplaySize } else { [int64]$item.Size }
-    $itemType = if ($item.Type) { [string]$item.Type } else { 'Élément' }
+    $itemType = if ($item.Type) { [string]$item.Type } else { 'Element' }
     $tooltipText = "$($item.Name)`n$itemType - $(Format-Size $displaySize)"
 
     if ($tooltipText -ne $script:lastTreemapTooltipText) {
@@ -729,7 +851,7 @@ function Start-Scan {
 
     $path = $txtPath.Text.Trim()
     if (-not $path) {
-        [System.Windows.Forms.MessageBox]::Show("Veuillez sélectionner un dossier ou un lecteur.", "Avertissement", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Veuillez selectionner un dossier ou un lecteur.", "Avertissement", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
         return
     }
 
@@ -738,7 +860,7 @@ function Start-Scan {
     }
 
     if (-not (Test-Path $path)) {
-        [System.Windows.Forms.MessageBox]::Show("Le chemin d'accès n'existe pas.", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Le chemin d'acces n'existe pas.", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
         return
     }
 
@@ -772,9 +894,9 @@ function Start-Scan {
             $row.SubItems.Add((Format-Size $item.Size)) | Out-Null
             $row.SubItems.Add($percent) | Out-Null
             if ($item.Type -eq 'Dossier') {
-                $row.BackColor = [System.Drawing.Color]::LightGoldenrodYellow
+                $row.BackColor = [System.Drawing.Color]::FromArgb(255, 250, 235)
             } else {
-                $row.BackColor = [System.Drawing.Color]::LightSteelBlue
+                $row.BackColor = [System.Drawing.Color]::FromArgb(235, 242, 255)
             }
             $lv.Items.Add($row) | Out-Null
             $counter++
@@ -785,11 +907,11 @@ function Start-Scan {
         $progressBar.Value = 100
 
         if ($items.Count -eq 0) {
-            $lblStatus.Text = "Analyse terminée : aucun élément trouvé dans le dossier."
+            $lblStatus.Text = "Analyse terminee : aucun element trouve dans le dossier."
         } elseif ($totalSize -le 0) {
-            $lblStatus.Text = "Analyse terminée - 0 o de taille mesurable. Treemap affichée par nombre d'éléments."
+            $lblStatus.Text = "Analyse terminee - 0 o de taille mesurable. Treemap affichee par nombre d'elements."
         } else {
-            $lblStatus.Text = "Analyse terminée - Total : $(Format-Size $totalSize) - $folderCount dossiers, $fileCount fichiers - $(($items.Count)) éléments affichés."
+            $lblStatus.Text = "Analyse terminee - Total : $(Format-Size $totalSize) - $folderCount dossiers, $fileCount fichiers - $(($items.Count)) elements affiches."
         }
         Update-TreemapDisplay
     } catch {
@@ -803,7 +925,7 @@ function Start-Scan {
 
 $btnBrowse.Add_Click({
     $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-    $dialog.Description = "Choisissez un dossier ou un lecteur à analyser"
+    $dialog.Description = "Choisissez un dossier ou un lecteur a analyser"
     if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
         $txtPath.Text = $dialog.SelectedPath
         if ($chkAutoScan.Checked) {
@@ -819,7 +941,7 @@ $btnScan.Add_Click({
 $btnRoot.Add_Click({
     $currentPath = $txtPath.Text.Trim()
     if (-not $currentPath) {
-        [System.Windows.Forms.MessageBox]::Show("Veuillez d'abord sélectionner un dossier ou un lecteur.", "Avertissement", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Veuillez d'abord selectionner un dossier ou un lecteur.", "Avertissement", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
         return
     }
 
@@ -866,46 +988,156 @@ $btnDocs.Add_Click({
 
 $btnAbout.Add_Click({
     $aboutForm = New-Object System.Windows.Forms.Form
-    $aboutForm.Text = "À propos"
-    $aboutForm.Size = [System.Drawing.Size]::new(400, 180)
+    $aboutForm.Text = "A propos de WinDirStat PowerShell"
+    $aboutForm.ClientSize = [System.Drawing.Size]::new(460, 310)
     $aboutForm.StartPosition = "CenterParent"
-    $aboutForm.Font = New-Object System.Drawing.Font("Arial", 9)
     $aboutForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+    $aboutForm.MaximizeBox = $false
+    $aboutForm.MinimizeBox = $false
+    $aboutForm.BackColor = [System.Drawing.Color]::White
 
+    # --- Banniere superieure (degrade bleu moderne) ---
+    $headerPanel = New-Object System.Windows.Forms.Panel
+    $headerPanel.Size = [System.Drawing.Size]::new(460, 90)
+    $headerPanel.Location = [System.Drawing.Point]::new(0, 0)
+    $headerPanel.BackColor = [System.Drawing.Color]::FromArgb(30, 50, 100)
+
+    # Icone (logo disque dur stylise)
+    $logoBitmap = New-Object System.Drawing.Bitmap(64, 64)
+    $lg = [System.Drawing.Graphics]::FromImage($logoBitmap)
+    $lg.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+    $lg.Clear([System.Drawing.Color]::Transparent)
+    # Corps du disque
+    $diskBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(80, 180, 255))
+    $lg.FillEllipse($diskBrush, 4, 4, 56, 56)
+    $diskPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(180, 220, 255), 2)
+    $lg.DrawEllipse($diskPen, 4, 4, 56, 56)
+    # Graphique treemap miniature
+    $miniBrush1 = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 200, 60))
+    $miniBrush2 = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 100, 80))
+    $miniBrush3 = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(80, 200, 120))
+    $miniBrush4 = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(160, 120, 220))
+    $lg.FillRectangle($miniBrush1, 18, 18, 20, 14)
+    $lg.FillRectangle($miniBrush2, 38, 18, 12, 14)
+    $lg.FillRectangle($miniBrush3, 18, 32, 16, 18)
+    $lg.FillRectangle($miniBrush4, 34, 32, 16, 18)
+    $lg.Dispose(); $diskBrush.Dispose(); $diskPen.Dispose()
+    $miniBrush1.Dispose(); $miniBrush2.Dispose(); $miniBrush3.Dispose(); $miniBrush4.Dispose()
+
+    $logoBox = New-Object System.Windows.Forms.PictureBox
+    $logoBox.Image = $logoBitmap
+    $logoBox.Size = [System.Drawing.Size]::new(64, 64)
+    $logoBox.Location = [System.Drawing.Point]::new(15, 13)
+    $logoBox.BackColor = [System.Drawing.Color]::Transparent
+    $logoBox.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::CenterImage
+
+    # Titre et version dans le header
+    $lblTitle = New-Object System.Windows.Forms.Label
+    $lblTitle.Text = "WinDirStat PowerShell"
+    $lblTitle.Location = [System.Drawing.Point]::new(90, 12)
+    $lblTitle.Size = [System.Drawing.Size]::new(350, 28)
+    $lblTitle.Font = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
+    $lblTitle.ForeColor = [System.Drawing.Color]::White
+    $lblTitle.BackColor = [System.Drawing.Color]::Transparent
+
+    $lblVersion = New-Object System.Windows.Forms.Label
+    $lblVersion.Text = "Version 1.13  |  Juin 2026"
+    $lblVersion.Location = [System.Drawing.Point]::new(90, 42)
+    $lblVersion.Size = [System.Drawing.Size]::new(350, 20)
+    $lblVersion.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
+    $lblVersion.ForeColor = [System.Drawing.Color]::FromArgb(180, 200, 230)
+    $lblVersion.BackColor = [System.Drawing.Color]::Transparent
+
+    $lblSubtitle = New-Object System.Windows.Forms.Label
+    $lblSubtitle.Text = "Analyse d'espace disque avec visualisation treemap"
+    $lblSubtitle.Location = [System.Drawing.Point]::new(90, 62)
+    $lblSubtitle.Size = [System.Drawing.Size]::new(350, 20)
+    $lblSubtitle.Font = New-Object System.Drawing.Font("Segoe UI", 8, [System.Drawing.FontStyle]::Italic)
+    $lblSubtitle.ForeColor = [System.Drawing.Color]::FromArgb(150, 180, 220)
+    $lblSubtitle.BackColor = [System.Drawing.Color]::Transparent
+
+    $headerPanel.Controls.AddRange(@($logoBox, $lblTitle, $lblVersion, $lblSubtitle))
+
+    # --- Contenu principal ---
+    $contentY = 105
+
+    # Developpeur
     $lblDev = New-Object System.Windows.Forms.Label
-    $lblDev.Text = "Développé par Gregory HARGOUS"
-    $lblDev.Location = [System.Drawing.Point]::new(10, 10)
-    $lblDev.Size = [System.Drawing.Size]::new(380, 25)
-    $lblDev.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
-    $lblDev.Font = New-Object System.Drawing.Font("Arial", 10, [System.Drawing.FontStyle]::Bold)
+    $lblDev.Text = "Developpe par Gregory HARGOUS"
+    $lblDev.Location = [System.Drawing.Point]::new(20, $contentY)
+    $lblDev.Size = [System.Drawing.Size]::new(420, 22)
+    $lblDev.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+    $lblDev.ForeColor = [System.Drawing.Color]::FromArgb(50, 50, 50)
 
-    $lblSite = New-Object System.Windows.Forms.Label
-    $lblSite.Text = "https://gregland.net"
-    $lblSite.Location = [System.Drawing.Point]::new(10, 40)
-    $lblSite.Size = [System.Drawing.Size]::new(380, 25)
-    $lblSite.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
-    $lblSite.Font = New-Object System.Drawing.Font("Arial", 9, [System.Drawing.FontStyle]::Underline)
-    $lblSite.ForeColor = [System.Drawing.Color]::Blue
-    $lblSite.Cursor = [System.Windows.Forms.Cursors]::Hand
-    $lblSite.Add_Click({ Start-Process "https://gregland.net" })
+    # Separateur
+    $separator = New-Object System.Windows.Forms.Label
+    $separator.BorderStyle = [System.Windows.Forms.BorderStyle]::Fixed3D
+    $separator.Size = [System.Drawing.Size]::new(420, 2)
+    $separator.Location = [System.Drawing.Point]::new(20, 132)
 
-    $lblMail = New-Object System.Windows.Forms.Label
-    $lblMail.Text = "gregory.hargous@gmail.com"
-    $lblMail.Location = [System.Drawing.Point]::new(10, 65)
-    $lblMail.Size = [System.Drawing.Size]::new(380, 25)
-    $lblMail.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
-    $lblMail.Font = New-Object System.Drawing.Font("Arial", 9, [System.Drawing.FontStyle]::Underline)
-    $lblMail.ForeColor = [System.Drawing.Color]::Blue
-    $lblMail.Cursor = [System.Windows.Forms.Cursors]::Hand
-    $lblMail.Add_Click({ Start-Process "mailto:gregory.hargous@gmail.com" })
+    # Liens (LinkLabel pour un look natif)
+    $lnkWebsite = New-Object System.Windows.Forms.LinkLabel
+    $lnkWebsite.Text = "https://gregland.net"
+    $lnkWebsite.Location = [System.Drawing.Point]::new(20, 142)
+    $lnkWebsite.Size = [System.Drawing.Size]::new(420, 24)
+    $lnkWebsite.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+    $lnkWebsite.LinkColor = [System.Drawing.Color]::FromArgb(0, 120, 212)
+    $lnkWebsite.ActiveLinkColor = [System.Drawing.Color]::FromArgb(0, 80, 180)
+    $lnkWebsite.LinkBehavior = [System.Windows.Forms.LinkBehavior]::HoverUnderline
+    $lnkWebsite.Add_Click({ Start-Process "https://gregland.net" })
 
+    $lnkGitHub = New-Object System.Windows.Forms.LinkLabel
+    $lnkGitHub.Text = "github.com/gregland76/Windirstat"
+    $lnkGitHub.Location = [System.Drawing.Point]::new(20, 168)
+    $lnkGitHub.Size = [System.Drawing.Size]::new(420, 24)
+    $lnkGitHub.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+    $lnkGitHub.LinkColor = [System.Drawing.Color]::FromArgb(0, 120, 212)
+    $lnkGitHub.ActiveLinkColor = [System.Drawing.Color]::FromArgb(0, 80, 180)
+    $lnkGitHub.LinkBehavior = [System.Windows.Forms.LinkBehavior]::HoverUnderline
+    $lnkGitHub.Add_Click({ Start-Process "https://github.com/gregland76/Windirstat" })
+
+    $lnkEmail = New-Object System.Windows.Forms.LinkLabel
+    $lnkEmail.Text = "gregory.hargous@gmail.com"
+    $lnkEmail.Location = [System.Drawing.Point]::new(20, 194)
+    $lnkEmail.Size = [System.Drawing.Size]::new(420, 24)
+    $lnkEmail.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+    $lnkEmail.LinkColor = [System.Drawing.Color]::FromArgb(0, 120, 212)
+    $lnkEmail.ActiveLinkColor = [System.Drawing.Color]::FromArgb(0, 80, 180)
+    $lnkEmail.LinkBehavior = [System.Windows.Forms.LinkBehavior]::HoverUnderline
+    $lnkEmail.Add_Click({ Start-Process "mailto:gregory.hargous@gmail.com" })
+
+    # Separateur bas
+    $separator2 = New-Object System.Windows.Forms.Label
+    $separator2.BorderStyle = [System.Windows.Forms.BorderStyle]::Fixed3D
+    $separator2.Size = [System.Drawing.Size]::new(420, 2)
+    $separator2.Location = [System.Drawing.Point]::new(20, 228)
+
+    # Mentions legales / licence
+    $lblLicense = New-Object System.Windows.Forms.Label
+    $lblLicense.Text = "(c) 2026 Gregory HARGOUS - Distribue sous licence MIT  |  Ecrit en PowerShell"
+    $lblLicense.Location = [System.Drawing.Point]::new(20, 236)
+    $lblLicense.Size = [System.Drawing.Size]::new(420, 20)
+    $lblLicense.Font = New-Object System.Drawing.Font("Segoe UI", 8)
+    $lblLicense.ForeColor = [System.Drawing.Color]::Gray
+    $lblLicense.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
+
+    # Bouton Fermer modernise
     $btnClose = New-Object System.Windows.Forms.Button
     $btnClose.Text = "Fermer"
-    $btnClose.Location = [System.Drawing.Point]::new(150, 100)
+    $btnClose.Location = [System.Drawing.Point]::new(180, 265)
     $btnClose.Size = [System.Drawing.Size]::new(100, 35)
+    $btnClose.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
+    $btnClose.BackColor = [System.Drawing.Color]::FromArgb(30, 50, 100)
+    $btnClose.ForeColor = [System.Drawing.Color]::White
+    $btnClose.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
+    $btnClose.FlatAppearance.BorderSize = 0
+    $btnClose.Cursor = [System.Windows.Forms.Cursors]::Hand
+    $btnClose.TabStop = $false
     $btnClose.Add_Click({ $aboutForm.Close() })
 
-    $aboutForm.Controls.AddRange(@($lblDev, $lblSite, $lblMail, $btnClose))
+    $aboutForm.Controls.AddRange(@($headerPanel, $lblDev, $separator, $lnkWebsite, $lnkGitHub, $lnkEmail, $separator2, $lblLicense, $btnClose))
+    $aboutForm.AcceptButton = $btnClose
+    $aboutForm.CancelButton = $btnClose
     [void]$aboutForm.ShowDialog()
 })
 

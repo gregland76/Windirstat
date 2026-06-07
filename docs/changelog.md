@@ -3,6 +3,28 @@
 Ce document resume les evolutions de WinDirStat PowerShell.
 La version HTML equivalente est disponible dans `changelog.html`.
 
+## Version 1.13 - 2026-06-07
+
+### Modifié
+
+- **Modernisation complète de l'interface principale** :
+  - Nouvelle barre de titre personnalisée avec logo et sous-titre (fond bleu foncé).
+  - Barre d'outils repensée avec fond blanc, boutons plats colorés (Parcourir bleu, Analyser vert).
+  - Boutons secondaires modernisés (Dossier parent, Aide, À propos).
+  - Checkbox d'analyse automatique en texte gris discret.
+  - Barre d'état modernisée avec séparateur et police Segoe UI.
+  - ProgressBar minimaliste (4px) en pied de fenêtre.
+  - ListView épurée (sans grille, sans bordure).
+  - Couleurs douces pour les lignes : crème pour les dossiers, bleu clair pour les fichiers.
+  - Police Segoe UI appliquée à toute l'interface.
+  - Fenêtre agrandie à 960×660 avec marges et espacement améliorés.
+- **Modernisation de la fenêtre À propos** :
+  - Bannière supérieure avec logo disque dur et mini-treemap.
+  - Liens cliquables (LinkLabel) vers le site web, GitHub et email.
+  - Mention de licence MIT et copyright.
+  - Bouton Fermer au style moderne (flat, bleu foncé).
+  - Support des touches Entrée/Échap pour fermer.
+
 ## Version 1.12 - 2026-06-07
 
 ### Modifié
