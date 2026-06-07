@@ -1,8 +1,8 @@
-﻿# WinDirStat PowerShell - Version 1.9
-# Developed by Gregory HARGOUS
-# Date: 19 April 2026
-# Description: A PowerShell script to analyze disk usage with a squarified treemap visualization
-# History available in docs/changelog.md and docs/changelog.html
+﻿# WinDirStat PowerShell - Version 1.12
+# Développé par Gregory HARGOUS
+# Date : 07 juin 2026
+# Description : Un script PowerShell pour analyser l'utilisation du disque avec une visualisation treemap
+# Historique disponible dans docs/changelog.md et docs/changelog.html
 
 
 Add-Type -AssemblyName System.Windows.Forms,System.Drawing
@@ -31,38 +31,38 @@ $txtPath.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.
 $btnBrowse = New-Object System.Windows.Forms.Button
 $btnBrowse.Location = [System.Drawing.Point]::new(760, 10)
 $btnBrowse.Size = [System.Drawing.Size]::new(70, 24)
-$btnBrowse.Text = "Browse"
+$btnBrowse.Text = "Parcourir"
 $btnBrowse.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
 
 $btnScan = New-Object System.Windows.Forms.Button
 $btnScan.Location = [System.Drawing.Point]::new(840, 10)
 $btnScan.Size = [System.Drawing.Size]::new(70, 24)
-$btnScan.Text = "Scan"
+$btnScan.Text = "Analyser"
 $btnScan.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
 
 $chkAutoScan = New-Object System.Windows.Forms.CheckBox
 $chkAutoScan.Location = [System.Drawing.Point]::new(10, 40)
 $chkAutoScan.Size = [System.Drawing.Size]::new(400, 24)
-$chkAutoScan.Text = "Scan automatically after folder selection"
+$chkAutoScan.Text = "Analyser automatiquement après sélection du dossier"
 $chkAutoScan.Checked = $true
 $chkAutoScan.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Left
 
 $btnRoot = New-Object System.Windows.Forms.Button
 $btnRoot.Location = [System.Drawing.Point]::new(680, 40)
 $btnRoot.Size = [System.Drawing.Size]::new(70, 24)
-$btnRoot.Text = "Parent"
+$btnRoot.Text = "Dossier parent"
 $btnRoot.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
 
 $btnDocs = New-Object System.Windows.Forms.Button
 $btnDocs.Location = [System.Drawing.Point]::new(760, 40)
 $btnDocs.Size = [System.Drawing.Size]::new(70, 24)
-$btnDocs.Text = "Docs"
+$btnDocs.Text = "Aide"
 $btnDocs.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
 
 $btnAbout = New-Object System.Windows.Forms.Button
 $btnAbout.Location = [System.Drawing.Point]::new(840, 40)
 $btnAbout.Size = [System.Drawing.Size]::new(70, 24)
-$btnAbout.Text = "About"
+$btnAbout.Text = "À propos"
 $btnAbout.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
 
 $splitMain = New-Object System.Windows.Forms.SplitContainer
@@ -78,7 +78,7 @@ $splitMain.SplitterDistance = 580
 $lblHint = New-Object System.Windows.Forms.Label
 $lblHint.Dock = [System.Windows.Forms.DockStyle]::Top
 $lblHint.Height = 30
-$lblHint.Text = "Double-click a folder to scan it, or right-click an item for more actions."
+$lblHint.Text = "Double-cliquez sur un dossier pour l'analyser, ou faites un clic droit pour plus d'actions."
 $lblHint.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
 $lblHint.ForeColor = [System.Drawing.Color]::Black
 $lblHint.BackColor = [System.Drawing.Color]::LightYellow
@@ -88,7 +88,7 @@ $lblHint.Font = New-Object System.Drawing.Font("Arial", 8, [System.Drawing.FontS
 $lblStatus = New-Object System.Windows.Forms.Label
 $lblStatus.Location = [System.Drawing.Point]::new(10, 560)
 $lblStatus.Size = [System.Drawing.Size]::new(900, 24)
-$lblStatus.Text = "Select a folder or drive, then click Scan."
+$lblStatus.Text = "Sélectionnez un dossier ou un lecteur, puis cliquez sur Analyser."
 $lblStatus.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
 
 $progressBar = New-Object System.Windows.Forms.ProgressBar
@@ -109,9 +109,9 @@ $lv.Dock = [System.Windows.Forms.DockStyle]::Fill
 $lv.View = 'Details'
 $lv.FullRowSelect = $true
 $lv.GridLines = $true
-$lv.Columns.Add("Object", 160) | Out-Null
+$lv.Columns.Add("Objet", 160) | Out-Null
 $lv.Columns.Add("Type", 70) | Out-Null
-$lv.Columns.Add("Size", 80) | Out-Null
+$lv.Columns.Add("Taille", 80) | Out-Null
 $lv.Columns.Add("%", 50) | Out-Null
 
 $imageList = New-Object System.Windows.Forms.ImageList
@@ -148,8 +148,8 @@ $imageList.Images.Add('File', $fileBitmap)
 $lv.SmallImageList = $imageList
 
 $listContextMenu = New-Object System.Windows.Forms.ContextMenuStrip
-$menuOpenItem = $listContextMenu.Items.Add("Open")
-$menuOpenFolder = $listContextMenu.Items.Add("Open Folder")
+$menuOpenItem = $listContextMenu.Items.Add("Ouvrir")
+$menuOpenFolder = $listContextMenu.Items.Add("Ouvrir le dossier")
 
 $lv.ContextMenuStrip = $listContextMenu
 
@@ -167,7 +167,7 @@ $panelMap.Add_Resize({
 $lv.Add_DoubleClick({
     if ($lv.SelectedItems.Count -eq 0) { return }
     $item = $lv.SelectedItems[0]
-    if ($item.SubItems[1].Text -eq 'Folder' -and $item.Tag) {
+    if ($item.SubItems[1].Text -eq 'Dossier' -and $item.Tag) {
             $txtPath.Text = $item.Tag
             Start-Scan $false
         }
@@ -202,9 +202,9 @@ $listContextMenu.Add_Opening({
     }
 
     $selectedItem = $lv.SelectedItems[0]
-    $isFolder = $selectedItem.SubItems[1].Text -eq 'Folder'
-    $menuOpenItem.Text = if ($isFolder) { 'Open Folder' } else { 'Open File' }
-    $menuOpenFolder.Text = if ($isFolder) { 'Open This Folder' } else { 'Go To Containing Folder' }
+    $isFolder = $selectedItem.SubItems[1].Text -eq 'Dossier'
+    $menuOpenItem.Text = if ($isFolder) { 'Ouvrir le dossier' } else { 'Ouvrir le fichier' }
+    $menuOpenFolder.Text = if ($isFolder) { 'Ouvrir ce dossier' } else { 'Aller au dossier parent' }
 })
 
 $menuOpenItem.Add_Click({
@@ -236,11 +236,11 @@ $treemapToolTip.ShowAlways = $true
 
 function Format-Size {
     param([int64]$Size)
-    if ($Size -ge 1TB) { return "{0:N2} TB" -f ($Size / 1TB) }
-    if ($Size -ge 1GB) { return "{0:N2} GB" -f ($Size / 1GB) }
-    if ($Size -ge 1MB) { return "{0:N2} MB" -f ($Size / 1MB) }
-    if ($Size -ge 1KB) { return "{0:N2} KB" -f ($Size / 1KB) }
-    return "$Size B"
+    if ($Size -ge 1TB) { return "{0:N2} To" -f ($Size / 1TB) }
+    if ($Size -ge 1GB) { return "{0:N2} Go" -f ($Size / 1GB) }
+    if ($Size -ge 1MB) { return "{0:N2} Mo" -f ($Size / 1MB) }
+    if ($Size -ge 1KB) { return "{0:N2} Ko" -f ($Size / 1KB) }
+    return "$Size o"
 }
 
 function Invoke-ListViewItemOpen {
@@ -250,14 +250,14 @@ function Invoke-ListViewItemOpen {
 
     $targetPath = [string]$Item.Tag
     if (-not (Test-Path -LiteralPath $targetPath)) {
-        [System.Windows.Forms.MessageBox]::Show("The selected item no longer exists.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("L'élément sélectionné n'existe plus.", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
         return
     }
 
     try {
         Start-Process -FilePath $targetPath | Out-Null
     } catch {
-        [System.Windows.Forms.MessageBox]::Show("Unable to open the selected item: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Impossible d'ouvrir l'élément sélectionné : $_", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
     }
 }
 
@@ -268,18 +268,18 @@ function Invoke-ListViewItemFolderOpen {
 
     $targetPath = [string]$Item.Tag
     if (-not (Test-Path -LiteralPath $targetPath)) {
-        [System.Windows.Forms.MessageBox]::Show("The selected item no longer exists.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("L'élément sélectionné n'existe plus.", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
         return
     }
 
     try {
-        if ($Item.SubItems[1].Text -eq 'Folder') {
+        if ($Item.SubItems[1].Text -eq 'Dossier') {
             Start-Process -FilePath $targetPath | Out-Null
         } else {
             Start-Process -FilePath 'explorer.exe' -ArgumentList ('/select,"{0}"' -f $targetPath) | Out-Null
         }
     } catch {
-        [System.Windows.Forms.MessageBox]::Show("Unable to open the containing folder: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Impossible d'ouvrir le dossier parent : $_", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
     }
 }
 
@@ -304,14 +304,14 @@ function Get-ItemSizes {
                 $items += [PSCustomObject]@{
                     Name     = $child.Name
                     FullName = $child.FullName
-                    Type     = "Folder"
+                    Type     = "Dossier"
                     Size     = [int64]$size
                 }
             } else {
                 $items += [PSCustomObject]@{
                     Name     = $child.Name
                     FullName = $child.FullName
-                    Type     = "File"
+                    Type     = "Fichier"
                     Size     = [int64]$child.Length
                 }
             }
@@ -320,7 +320,7 @@ function Get-ItemSizes {
         $items += [PSCustomObject]@{
             Name     = $rootItem.Name
             FullName = $rootItem.FullName
-            Type     = "File"
+            Type     = "Fichier"
             Size     = [int64]$rootItem.Length
         }
     }
@@ -710,7 +710,7 @@ $panelMap.Add_MouseMove({
 
     $item = $hoveredRegion.Item
     $displaySize = if ($item.PSObject.Properties['DisplaySize']) { [int64]$item.DisplaySize } else { [int64]$item.Size }
-    $itemType = if ($item.Type) { [string]$item.Type } else { 'Item' }
+    $itemType = if ($item.Type) { [string]$item.Type } else { 'Élément' }
     $tooltipText = "$($item.Name)`n$itemType - $(Format-Size $displaySize)"
 
     if ($tooltipText -ne $script:lastTreemapTooltipText) {
@@ -729,7 +729,7 @@ function Start-Scan {
 
     $path = $txtPath.Text.Trim()
     if (-not $path) {
-        [System.Windows.Forms.MessageBox]::Show("Please select a folder or drive.", "Warning", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Veuillez sélectionner un dossier ou un lecteur.", "Avertissement", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
         return
     }
 
@@ -738,14 +738,14 @@ function Start-Scan {
     }
 
     if (-not (Test-Path $path)) {
-        [System.Windows.Forms.MessageBox]::Show("The path does not exist.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Le chemin d'accès n'existe pas.", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
         return
     }
 
     $btnScan.Enabled = $false
     $btnBrowse.Enabled = $false
     $form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
-    $lblStatus.Text = "Analysis in progress..."
+    $lblStatus.Text = "Analyse en cours..."
     $progressBar.Value = 0
     $lv.Items.Clear()
     $script:treemapItems = @()
@@ -759,19 +759,19 @@ function Start-Scan {
             $items = $items | Select-Object -First 50
         }
         $script:treemapItems = $items
-        $folderCount = ($items | Where-Object Type -eq 'Folder').Count
-        $fileCount = ($items | Where-Object Type -eq 'File').Count
+        $folderCount = ($items | Where-Object Type -eq 'Dossier').Count
+        $fileCount = ($items | Where-Object Type -eq 'Fichier').Count
 
         $counter = 0
         foreach ($item in $items) {
             $percent = if ($totalSize -gt 0) { "{0:N2}" -f (($item.Size / $totalSize) * 100) } else { "0.00" }
-            $imageKey = if ($item.Type -eq 'Folder') { 'Folder' } else { 'File' }
+            $imageKey = if ($item.Type -eq 'Dossier') { 'Folder' } else { 'File' }
             $row = New-Object System.Windows.Forms.ListViewItem($item.Name, $imageKey)
             $row.Tag = $item.FullName
             $row.SubItems.Add($item.Type) | Out-Null
             $row.SubItems.Add((Format-Size $item.Size)) | Out-Null
             $row.SubItems.Add($percent) | Out-Null
-            if ($item.Type -eq 'Folder') {
+            if ($item.Type -eq 'Dossier') {
                 $row.BackColor = [System.Drawing.Color]::LightGoldenrodYellow
             } else {
                 $row.BackColor = [System.Drawing.Color]::LightSteelBlue
@@ -785,15 +785,15 @@ function Start-Scan {
         $progressBar.Value = 100
 
         if ($items.Count -eq 0) {
-            $lblStatus.Text = "Analysis completed: no items found in the folder."
+            $lblStatus.Text = "Analyse terminée : aucun élément trouvé dans le dossier."
         } elseif ($totalSize -le 0) {
-            $lblStatus.Text = "Analysis completed - 0 B measurable size. Treemap displayed by item count."
+            $lblStatus.Text = "Analyse terminée - 0 o de taille mesurable. Treemap affichée par nombre d'éléments."
         } else {
-            $lblStatus.Text = "Analysis completed - Total: $(Format-Size $totalSize) - $folderCount folders, $fileCount files - $(($items.Count)) items displayed."
+            $lblStatus.Text = "Analyse terminée - Total : $(Format-Size $totalSize) - $folderCount dossiers, $fileCount fichiers - $(($items.Count)) éléments affichés."
         }
         Update-TreemapDisplay
     } catch {
-        [System.Windows.Forms.MessageBox]::Show("Error during analysis: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Erreur pendant l'analyse : $_", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
     } finally {
         $btnScan.Enabled = $true
         $btnBrowse.Enabled = $true
@@ -803,7 +803,7 @@ function Start-Scan {
 
 $btnBrowse.Add_Click({
     $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-    $dialog.Description = "Choose a folder or drive to analyze"
+    $dialog.Description = "Choisissez un dossier ou un lecteur à analyser"
     if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
         $txtPath.Text = $dialog.SelectedPath
         if ($chkAutoScan.Checked) {
@@ -819,7 +819,7 @@ $btnScan.Add_Click({
 $btnRoot.Add_Click({
     $currentPath = $txtPath.Text.Trim()
     if (-not $currentPath) {
-        [System.Windows.Forms.MessageBox]::Show("Please select a folder or drive first.", "Warning", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Veuillez d'abord sélectionner un dossier ou un lecteur.", "Avertissement", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
         return
     }
 
@@ -830,7 +830,7 @@ $btnRoot.Add_Click({
     }
 
     if (-not $parentPath) {
-        [System.Windows.Forms.MessageBox]::Show("No parent folder available.", "Warning", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Aucun dossier parent disponible.", "Avertissement", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
         return
     }
 
@@ -857,23 +857,23 @@ $btnDocs.Add_Click({
         } elseif (Test-Path -LiteralPath $docsFolderPath) {
             Start-Process -FilePath $docsFolderPath | Out-Null
         } else {
-            [System.Windows.Forms.MessageBox]::Show("Documentation not found. Expected path: $docsHtmlPath", "Warning", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
+            [System.Windows.Forms.MessageBox]::Show("Documentation introuvable. Chemin attendu : $docsHtmlPath", "Avertissement", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
         }
     } catch {
-        [System.Windows.Forms.MessageBox]::Show("Unable to open documentation: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show("Impossible d'ouvrir la documentation : $_", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
     }
 })
 
 $btnAbout.Add_Click({
     $aboutForm = New-Object System.Windows.Forms.Form
-    $aboutForm.Text = "About"
+    $aboutForm.Text = "À propos"
     $aboutForm.Size = [System.Drawing.Size]::new(400, 180)
     $aboutForm.StartPosition = "CenterParent"
     $aboutForm.Font = New-Object System.Drawing.Font("Arial", 9)
     $aboutForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
 
     $lblDev = New-Object System.Windows.Forms.Label
-    $lblDev.Text = "Developed by Gregory HARGOUS"
+    $lblDev.Text = "Développé par Gregory HARGOUS"
     $lblDev.Location = [System.Drawing.Point]::new(10, 10)
     $lblDev.Size = [System.Drawing.Size]::new(380, 25)
     $lblDev.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
@@ -900,7 +900,7 @@ $btnAbout.Add_Click({
     $lblMail.Add_Click({ Start-Process "mailto:gregory.hargous@gmail.com" })
 
     $btnClose = New-Object System.Windows.Forms.Button
-    $btnClose.Text = "Close"
+    $btnClose.Text = "Fermer"
     $btnClose.Location = [System.Drawing.Point]::new(150, 100)
     $btnClose.Size = [System.Drawing.Size]::new(100, 35)
     $btnClose.Add_Click({ $aboutForm.Close() })

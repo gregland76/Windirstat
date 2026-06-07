@@ -8,18 +8,18 @@ avec une vue liste et une visualisation treemap.
 ## 2. Demarrage
 
 1. Lancez le script PowerShell `windirstat.ps1`.
-2. Cliquez sur **Browse** pour choisir un dossier.
-3. Cliquez sur **Scan** (ou laissez le scan auto actif).
+2. Cliquez sur **Parcourir** pour choisir un dossier.
+3. Cliquez sur **Analyser** (ou laissez le scan automatique actif).
 
 Capture suggeree : `screenshots/01-interface-principale.png`
 
 ## 3. Utilisation de l'interface
 
-- **Browse** : selectionne un dossier a analyser.
-- **Scan** : lance l'analyse du chemin courant.
-- **Parent** : remonte d'un niveau puis relance l'analyse.
-- **Docs** : ouvre la documentation du projet.
-- **About** : affiche les informations de l'application.
+- **Parcourir** : sélectionne un dossier à analyser.
+- **Analyser** : lance l'analyse du chemin courant.
+- **Dossier parent** : remonte d'un niveau puis relance l'analyse.
+- **Aide** : ouvre la documentation du projet.
+- **À propos** : affiche les informations de l'application.
 
 Capture suggeree : `screenshots/02-apres-scan.png`
 
@@ -28,7 +28,7 @@ Capture suggeree : `screenshots/02-apres-scan.png`
 La liste a droite affiche :
 
 - Objet
-- Type (Folder/File)
+- Type (Dossier/Fichier)
 - Taille
 - Pourcentage de l'espace total
 
@@ -37,7 +37,7 @@ Actions disponibles :
 - Double-clic sur un dossier pour l'analyser.
 - Clic droit sur un element pour :
   - ouvrir le fichier/dossier,
-  - ouvrir le dossier parent.
+  - ouvrir le dossier contenant.
 
 Capture suggeree : `screenshots/03-menu-contextuel.png`
 
@@ -49,13 +49,13 @@ Le layout privilegie des zones plus carrees et place les plus gros elements en h
 
 ## 6. Depannage
 
-- Message "The path does not exist": verifiez que le chemin existe toujours.
+- Message "Le chemin d'accès n'existe pas." : vérifiez que le chemin existe toujours.
 - Aucun element affiche: testez un autre dossier ou verifiez les permissions.
-- Ouverture d'un element impossible: l'element a peut-etre ete deplace/supprime.
+- Ouverture d'un élément impossible : l'élément a peut-être été déplacé ou supprimé.
 
 ## 7. Contact
 
-Voir la fenetre **About** pour les informations de contact.
+Voir la fenêtre **À propos** pour les informations de contact.
 
 Capture suggeree : `screenshots/04-fenetre-about.png`
 

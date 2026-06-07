@@ -3,6 +3,20 @@
 Ce document resume les evolutions de WinDirStat PowerShell.
 La version HTML equivalente est disponible dans `changelog.html`.
 
+## Version 1.12 - 2026-06-07
+
+### Modifié
+
+- Traduction complète de l'interface en français (boutons, messages, infobulles, boîtes de dialogue).
+- Renommage du bouton **Docs** en **Aide**.
+- Renommage du bouton **Browse** en **Parcourir**.
+- Renommage du bouton **Scan** en **Analyser**.
+- Renommage du bouton **Parent** en **Dossier parent**.
+- Renommage du bouton **About** en **À propos**.
+- Traduction des types d'éléments (Folder → Dossier, File → Fichier).
+- Traduction des unités de taille (TB→To, GB→Go, MB→Mo, KB→Ko, B→o).
+- Mise à jour des fichiers de documentation (`help.md`, `help.html`, `readme.md`) pour refléter les nouveaux noms.
+
 ## Version 1.11 - 2026-04-21
 
 ### Modifie

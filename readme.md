@@ -18,15 +18,15 @@ Ce que fait le programme
 Fonctionnalites principales
 ---------------------------
 
-- Bouton Browse pour choisir un dossier a analyser.
-- Bouton Scan pour lancer l'analyse manuellement.
-- Option de scan automatique apres selection d'un dossier.
-- Bouton Parent pour remonter d'un niveau et relancer l'analyse.
+- Bouton **Parcourir** pour choisir un dossier à analyser.
+- Bouton **Analyser** pour lancer l'analyse manuellement.
+- Option de scan automatique après sélection d'un dossier.
+- Bouton **Dossier parent** pour remonter d'un niveau et relancer l'analyse.
 - Liste des objets avec leur type, leur taille et leur pourcentage d'occupation.
 - Double-clic sur un dossier pour l'analyser directement.
-- Menu contextuel pour ouvrir un element ou son dossier parent.
-- Bouton Docs pour ouvrir la documentation.
-- Bouton About pour afficher les informations sur l'application.
+- Menu contextuel pour ouvrir un élément ou son dossier parent.
+- Bouton **Aide** pour ouvrir la documentation.
+- Bouton **À propos** pour afficher les informations sur l'application.
 
 Interface
 ---------
