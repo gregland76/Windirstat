@@ -1,4 +1,4 @@
-﻿# WinDirStat PowerShell - Version 1.13
+﻿# WinDirStat PowerShell - Version 1.14
 # Developpe par Gregory HARGOUS
 # Date : 07 juin 2026
 # Description : Un script PowerShell pour analyser l'utilisation du disque avec une visualisation treemap
@@ -66,7 +66,7 @@ $lblAppTitle.BackColor = [System.Drawing.Color]::Transparent
 $lblAppTitle.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
 
 $lblAppSub = New-Object System.Windows.Forms.Label
-$lblAppSub.Text = "v1.13 - Analyse d'espace disque"
+$lblAppSub.Text = "v1.14 - Analyse d'espace disque"
 $lblAppSub.Location = [System.Drawing.Point]::new(330, 0)
 $lblAppSub.Size = [System.Drawing.Size]::new(620, 42)
 $lblAppSub.Font = New-Object System.Drawing.Font("Segoe UI", 9)
@@ -406,6 +406,97 @@ function Invoke-ListViewItemFolderOpen {
     }
 }
 
+# Cache des tailles de dossiers (memoisation en memoire pour la session)
+$script:folderSizeCache = [System.Collections.Generic.Dictionary[string,int64]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+function Get-CacheKey {
+    param([string]$Path)
+
+    try {
+        return [System.IO.Path]::GetFullPath($Path).TrimEnd('\')
+    } catch {
+        return $Path.TrimEnd('\')
+    }
+}
+
+function Clear-FolderCache {
+    param([string]$Path)
+
+    $key = Get-CacheKey -Path $Path
+    $prefix = $key + '\'
+
+    $stale = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($entry in $script:folderSizeCache.GetEnumerator()) {
+        $k = $entry.Key
+        if ($k -eq $key -or $k.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $stale.Add($k)
+        }
+    }
+    foreach ($k in $stale) {
+        [void]$script:folderSizeCache.Remove($k)
+    }
+
+    # Invalider aussi les ancetres, dont la taille depend de ce sous-arbre.
+    $ancestor = Split-Path -Path $key -Parent
+    while ($ancestor) {
+        $ancestorKey = Get-CacheKey -Path $ancestor
+        if ($script:folderSizeCache.ContainsKey($ancestorKey)) {
+            [void]$script:folderSizeCache.Remove($ancestorKey)
+        }
+        $parent = Split-Path -Path $ancestor -Parent
+        if (-not $parent -or $parent -eq $ancestor) { break }
+        $ancestor = $parent
+    }
+}
+
+function Get-FolderSize {
+    param([string]$Path)
+
+    $key = Get-CacheKey -Path $Path
+    $cached = 0L
+    if ($script:folderSizeCache.TryGetValue($key, [ref]$cached)) {
+        return $cached
+    }
+
+    $size = 0L
+    $dirSizes = [System.Collections.Generic.Dictionary[string,int64]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    try {
+        $files = Get-ChildItem -LiteralPath $Path -Recurse -File -Force -ErrorAction SilentlyContinue
+        foreach ($file in $files) {
+            $size += [int64]$file.Length
+            $dirPath = $file.DirectoryName
+            while ($dirPath) {
+                $dirKey = $dirPath.TrimEnd('\')
+                if ($script:folderSizeCache.ContainsKey($dirKey)) { break }
+
+                $existing = 0L
+                if ($dirSizes.TryGetValue($dirKey, [ref]$existing)) {
+                    $dirSizes[$dirKey] = $existing + [int64]$file.Length
+                } else {
+                    $dirSizes[$dirKey] = [int64]$file.Length
+                }
+
+                if ($dirKey -eq $key) { break }
+
+                $parent = Split-Path -Path $dirPath -Parent
+                if (-not $parent -or $parent -eq $dirPath) { break }
+                $dirPath = $parent
+            }
+        }
+
+        foreach ($entry in $dirSizes.GetEnumerator()) {
+            if (-not $script:folderSizeCache.ContainsKey($entry.Key)) {
+                $script:folderSizeCache[$entry.Key] = $entry.Value
+            }
+        }
+        $script:folderSizeCache[$key] = $size
+    } catch {
+        $size = 0L
+    }
+
+    return $size
+}
+
 function Get-ItemSizes {
     param([string]$RootPath)
 
@@ -420,15 +511,11 @@ function Get-ItemSizes {
         $children = Get-ChildItem -LiteralPath $RootPath -Force -ErrorAction SilentlyContinue
         foreach ($child in $children) {
             if ($child.PSIsContainer) {
-                $size = 0
-                try {
-                    $size = (Get-ChildItem -LiteralPath $child.FullName -Recurse -File -ErrorAction SilentlyContinue | Measure-Object Length -Sum).Sum
-                } catch {}
                 $items += [PSCustomObject]@{
                     Name     = $child.Name
                     FullName = $child.FullName
                     Type     = "Dossier"
-                    Size     = [int64]$size
+                    Size     = [int64](Get-FolderSize -Path $child.FullName)
                 }
             } else {
                 $items += [PSCustomObject]@{
@@ -847,7 +934,10 @@ $panelMap.Add_MouseLeave({
 })
 
 function Start-Scan {
-    param([bool]$setRoot = $true)
+    param(
+        [bool]$setRoot = $true,
+        [bool]$force = $false
+    )
 
     $path = $txtPath.Text.Trim()
     if (-not $path) {
@@ -862,6 +952,10 @@ function Start-Scan {
     if (-not (Test-Path $path)) {
         [System.Windows.Forms.MessageBox]::Show("Le chemin d'acces n'existe pas.", "Erreur", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
         return
+    }
+
+    if ($force) {
+        Clear-FolderCache -Path $path
     }
 
     $btnScan.Enabled = $false
@@ -906,12 +1000,13 @@ function Start-Scan {
         }
         $progressBar.Value = 100
 
+        $cacheInfo = " - Cache : $($script:folderSizeCache.Count) dossiers"
         if ($items.Count -eq 0) {
-            $lblStatus.Text = "Analyse terminee : aucun element trouve dans le dossier."
+            $lblStatus.Text = "Analyse terminee : aucun element trouve dans le dossier.$cacheInfo"
         } elseif ($totalSize -le 0) {
-            $lblStatus.Text = "Analyse terminee - 0 o de taille mesurable. Treemap affichee par nombre d'elements."
+            $lblStatus.Text = "Analyse terminee - 0 o de taille mesurable. Treemap affichee par nombre d'elements.$cacheInfo"
         } else {
-            $lblStatus.Text = "Analyse terminee - Total : $(Format-Size $totalSize) - $folderCount dossiers, $fileCount fichiers - $(($items.Count)) elements affiches."
+            $lblStatus.Text = "Analyse terminee - Total : $(Format-Size $totalSize) - $folderCount dossiers, $fileCount fichiers - $(($items.Count)) elements affiches.$cacheInfo"
         }
         Update-TreemapDisplay
     } catch {
@@ -935,7 +1030,7 @@ $btnBrowse.Add_Click({
 })
 
 $btnScan.Add_Click({
-    Start-Scan $true
+    Start-Scan $true -force:$true
 })
 
 $btnRoot.Add_Click({
@@ -1041,7 +1136,7 @@ $btnAbout.Add_Click({
     $lblTitle.BackColor = [System.Drawing.Color]::Transparent
 
     $lblVersion = New-Object System.Windows.Forms.Label
-    $lblVersion.Text = "Version 1.13  |  Juin 2026"
+    $lblVersion.Text = "Version 1.14  |  Octobre 2026"
     $lblVersion.Location = [System.Drawing.Point]::new(90, 42)
     $lblVersion.Size = [System.Drawing.Size]::new(350, 20)
     $lblVersion.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)

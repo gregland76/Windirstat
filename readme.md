@@ -13,6 +13,7 @@ Ce que fait le programme
 - Affiche les resultats dans une liste detaillee.
 - Genere une treemap visuelle a surface proportionnelle pour reperer rapidement les elements les plus lourds.
 - Permet de naviguer dans l'arborescence en relancant une analyse sur un sous-dossier.
+- Conserve en cache la taille des dossiers deja analyses pour accelerer la navigation entre dossiers.
 - Permet d'ouvrir directement un fichier, un dossier ou le dossier contenant un fichier.
 
 Fonctionnalites principales

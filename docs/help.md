@@ -19,6 +19,10 @@ avec une vue liste et une visualisation treemap.
 - **Aide** : ouvre la documentation du projet.
 - **À propos** : affiche les informations de l'application.
 
+Les tailles des dossiers déjà analysés sont conservées en mémoire (cache) pendant la session.
+Naviguer d'un dossier à un autre (double-clic, **Dossier parent**, scan automatique) réutilise ces valeurs,
+ce qui accélère les analyses suivantes. Le bouton **Analyser** force une nouvelle analyse complète.
+
 ## 4. Liste des elements
 
 La liste a droite affiche :

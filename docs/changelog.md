@@ -3,6 +3,14 @@
 Ce document resume les evolutions de WinDirStat PowerShell.
 La version HTML equivalente est disponible dans `changelog.html`.
 
+## Version 1.14 - 2026-10-30
+
+### Ajouté
+
+- **Mise en cache des tailles de dossiers** pendant la session : la navigation (double-clic sur un dossier, bouton **Dossier parent**, scan automatique) réutilise les tailles déjà calculées pour accélérer les analyses suivantes.
+- Le bouton **Analyser** force une nouvelle analyse complète : le cache du dossier, de ses sous-dossiers et de ses dossiers parents est invalidé puis recalculé.
+- Affichage du nombre de dossiers en cache dans la barre d'état.
+
 ## Version 1.13 - 2026-06-07
 
 ### Modifié
